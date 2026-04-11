@@ -518,7 +518,8 @@ body {
   <div class="menu-title">BlockTrek</div>
   <div class="menu-stars" id="menu-stars"></div>
   <div class="menu-buttons">
-    <button class="btn btn-primary" onclick="App.startRun()">Start Run</button>
+    <button class="btn btn-primary" id="btn-continue" onclick="App.continueRun()" style="display:none;">Continue Run</button>
+    <button class="btn btn-primary" onclick="App.startRun()">New Run</button>
     <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
   </div>
   <div class="menu-stats" id="menu-stats"></div>
@@ -777,7 +778,48 @@ const Game = {
 
     this.pieces = PieceFactory.generate(3);
     this.running = true;
+    this.saveRun();
     Renderer.renderAll();
+  },
+
+  saveRun() {
+    if (!this.running) return;
+    localStorage.setItem('blocktrek_run', JSON.stringify({
+      grid: Board.grid,
+      score: this.score, streak: this.streak, maxStreak: this.maxStreak,
+      linesCleared: this.linesCleared, turnsPlayed: this.turnsPlayed,
+      pieces: this.pieces, holdSlots: this.holdSlots,
+      livesLeft: this.livesLeft, bombsLeft: this.bombsLeft,
+      shufflesLeft: this.shufflesLeft, shieldTurns: this.shieldTurns
+    }));
+  },
+
+  clearRunSave() {
+    localStorage.removeItem('blocktrek_run');
+  },
+
+  hasSavedRun() {
+    return !!localStorage.getItem('blocktrek_run');
+  },
+
+  resumeRun() {
+    try {
+      const d = JSON.parse(localStorage.getItem('blocktrek_run'));
+      if (!d) return false;
+      Board.grid = d.grid;
+      this.score = d.score; this.streak = d.streak; this.maxStreak = d.maxStreak;
+      this.linesCleared = d.linesCleared; this.turnsPlayed = d.turnsPlayed;
+      this.pieces = d.pieces; this.holdSlots = d.holdSlots;
+      this.livesLeft = d.livesLeft; this.bombsLeft = d.bombsLeft;
+      this.shufflesLeft = d.shufflesLeft; this.shieldTurns = d.shieldTurns;
+      this.bombMode = false;
+      this.running = true;
+      Renderer.renderAll();
+      return true;
+    } catch(e) {
+      this.clearRunSave();
+      return false;
+    }
   },
 
   getAllActivePieces() {
@@ -851,6 +893,7 @@ const Game = {
       await this.handleStuck();
     }
 
+    this.saveRun();
     return true;
   },
 
@@ -895,6 +938,7 @@ const Game = {
     if (!Board.canAnyFit(this.getAllActivePieces())) {
       await this.handleStuck();
     }
+    this.saveRun();
   },
 
   useShuffle() {
@@ -910,6 +954,7 @@ const Game = {
     });
     Renderer.renderPieces();
     Renderer.renderConsumables();
+    this.saveRun();
   },
 
   holdPiece(pieceIdx) {
@@ -935,6 +980,7 @@ const Game = {
 
     Renderer.renderPieces();
     Renderer.renderHoldSlots();
+    this.saveRun();
   },
 
   retrieveHold(slotIdx) {
@@ -949,6 +995,7 @@ const Game = {
     this.holdSlots[slotIdx] = null;
     Renderer.renderPieces();
     Renderer.renderHoldSlots();
+    this.saveRun();
   },
 
   rotatePiece(pieceIdx) {
@@ -966,6 +1013,7 @@ const Game = {
 
   endRun() {
     this.running = false;
+    this.clearRunSave();
     SaveData.totalRuns++;
     SaveData.totalLinesCleared += this.linesCleared;
     const isNewBest = this.score > SaveData.bestScore;
@@ -1253,6 +1301,12 @@ const Renderer = {
   renderMenu() {
     document.getElementById('menu-stars').textContent = `⭐ ${SaveData.stars} Stars`;
     document.getElementById('menu-stats').textContent = `Best: ${SaveData.bestScore.toLocaleString()}  |  Runs: ${SaveData.totalRuns}  |  Lines: ${SaveData.totalLinesCleared}`;
+    const continueBtn = document.getElementById('btn-continue');
+    if (Game.hasSavedRun()) {
+      continueBtn.style.display = '';
+    } else {
+      continueBtn.style.display = 'none';
+    }
   },
 
   renderShop() {
@@ -1575,6 +1629,11 @@ const App = {
   startRun() {
     this.showScreen('game');
     Game.start();
+  },
+
+  continueRun() {
+    this.showScreen('game');
+    Game.resumeRun();
   }
 };
 
