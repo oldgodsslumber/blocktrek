@@ -620,6 +620,8 @@ body {
   gap: 0;
   padding: 0;
   overflow: hidden;
+  min-height: 0;
+  height: 100%;
 }
 .tour-header {
   width: 100%;
@@ -659,9 +661,11 @@ body {
 .tour-map-container {
   width: 100%;
   flex: 1;
+  min-height: 0;
   position: relative;
   background: #0d1b2a;
-  overflow: auto;
+  overflow: scroll;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #2a4a6a #0d1b2a;
