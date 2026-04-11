@@ -45,7 +45,6 @@ body {
   overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
 }
 
 .screen {
@@ -127,7 +126,7 @@ body {
 }
 
 /* ===== GAME SCREEN ===== */
-#screen-game { padding: 8px; gap: 8px; }
+#screen-game { padding: 8px; gap: 8px; touch-action: none; }
 
 .game-hud {
   width: 100%;
@@ -621,7 +620,6 @@ body {
   gap: 0;
   padding: 0;
   overflow: hidden;
-  touch-action: auto;
 }
 .tour-header {
   width: 100%;
@@ -664,7 +662,6 @@ body {
   position: relative;
   background: #0d1b2a;
   overflow: auto;
-  touch-action: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #2a4a6a #0d1b2a;
@@ -680,7 +677,6 @@ body {
   height: 1000px;
   position: relative;
   background: #0d1b2a;
-  touch-action: auto;
 }
 @media (min-width: 601px) {
   .tour-map-inner { width: 2400px; height: 1333px; }
