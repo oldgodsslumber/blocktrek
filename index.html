@@ -125,6 +125,61 @@ body {
   margin-top: -4px;
 }
 
+/* ===== INFINITE SUB-MENU ===== */
+#screen-infinite {
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+.inf-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.inf-stars {
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.inf-stats {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.inf-buttons { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+/* Run config UI */
+.run-config {
+  background: var(--bg-card);
+  border: 2px solid #333;
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 320px;
+  width: 100%;
+}
+.config-section { margin-bottom: 12px; }
+.config-label { font-weight: 700; margin-bottom: 6px; font-size: 0.85rem; }
+.config-options { display: flex; gap: 8px; justify-content: center; }
+.config-opt {
+  padding: 10px 18px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.config-opt.selected {
+  border-color: var(--color-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--color-cyan);
+}
+
 /* ===== GAME SCREEN ===== */
 #screen-game { padding: 8px; gap: 8px; touch-action: none; }
 
@@ -450,7 +505,7 @@ body {
 }
 
 /* ===== SHOP SCREEN ===== */
-#screen-shop, #screen-tourshop {
+#screen-shop, #screen-tourshop, #screen-infshop {
   gap: 16px;
   padding-bottom: 40px;
   overflow-y: auto;
@@ -469,6 +524,16 @@ body {
 .shop-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
 .shop-stars { color: var(--accent); font-weight: 700; }
 .tour-shop-stars { color: var(--tour-star); font-weight: 700; }
+.shop-section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  width: 100%;
+  max-width: 500px;
+}
 .shop-grid {
   width: 100%;
   max-width: 500px;
@@ -689,7 +754,7 @@ body {
 .tour-map-container::-webkit-scrollbar-thumb { background: #2a4a6a; border-radius: 5px; }
 .tour-map-container::-webkit-scrollbar-thumb:hover { background: #3a6a9a; }
 .tour-map-inner {
-  /* Big enough to spread towns apart — scrollable in both directions */
+  /* Big enough to spread towns apart -- scrollable in both directions */
   width: 1800px;
   height: 1000px;
   position: relative;
@@ -934,16 +999,42 @@ body {
 <!-- MENU -->
 <div id="screen-menu" class="screen active">
   <div class="menu-title">BlockTrek</div>
-  <div class="menu-stars" id="menu-stars"></div>
   <div class="menu-buttons">
-    <button class="btn btn-primary" id="btn-continue" onclick="App.continueRun()" style="display:none;">Continue Run</button>
-    <button class="btn btn-primary" onclick="App.startRun()">New Run</button>
-    <button class="btn btn-tour" id="btn-tour" onclick="App.showScreen('tour')">World Tour</button>
+    <button class="btn btn-primary" onclick="App.showScreen('infinite')" style="min-width:220px;">Infinite Mode</button>
+    <button class="btn btn-tour" onclick="App.showScreen('tour')" style="min-width:220px;">World Tour</button>
     <div class="menu-tour-progress" id="menu-tour-progress"></div>
-    <button class="btn btn-tour" id="btn-continue-tour" onclick="App.continueTourRun()" style="display:none;">Continue Tour</button>
-    <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
   </div>
-  <div class="menu-stats" id="menu-stats"></div>
+</div>
+
+<!-- INFINITE SUB-MENU -->
+<div id="screen-infinite" class="screen">
+  <div class="inf-title">Infinite Mode</div>
+  <div class="inf-stars" id="inf-stars"></div>
+  <div class="inf-buttons">
+    <button class="btn btn-primary" id="btn-inf-continue" onclick="App.continueInfiniteRun()" style="display:none;">Continue Run</button>
+    <button class="btn btn-primary" id="btn-inf-newrun" onclick="App.toggleRunConfig()">New Run</button>
+    <div class="run-config" id="run-config" style="display:none;">
+      <div class="config-section">
+        <div class="config-label">Grid Size</div>
+        <div class="config-options">
+          <button class="config-opt" data-grid="8" onclick="App.selectGrid(this)">8x8</button>
+          <button class="config-opt" data-grid="9" onclick="App.selectGrid(this)">9x9</button>
+          <button class="config-opt selected" data-grid="10" onclick="App.selectGrid(this)">10x10</button>
+        </div>
+      </div>
+      <div class="config-section">
+        <div class="config-label">Mode</div>
+        <div class="config-options">
+          <button class="config-opt selected" data-mode="static" onclick="App.selectMode(this)">Static</button>
+          <button class="config-opt" data-mode="falling" onclick="App.selectMode(this)">Falling</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="App.startInfiniteRun()" style="margin-top:12px;">Start</button>
+    </div>
+    <button class="btn btn-accent" onclick="App.showScreen('infshop')">Shop</button>
+    <button class="btn btn-secondary" onclick="App.showScreen('menu')">Back</button>
+  </div>
+  <div class="inf-stats" id="inf-stats"></div>
 </div>
 
 <!-- GAME -->
@@ -980,16 +1071,16 @@ body {
   <div class="piece-tray" id="piece-tray"></div>
 </div>
 
-<!-- SHOP -->
-<div id="screen-shop" class="screen">
+<!-- INFINITE SHOP -->
+<div id="screen-infshop" class="screen">
   <div class="shop-header">
     <div>
-      <button class="btn btn-secondary" onclick="App.showScreen('menu')" style="padding:8px 16px;font-size:0.85rem;">&larr; Back</button>
+      <button class="btn btn-secondary" onclick="App.showScreen('infinite')" style="padding:8px 16px;font-size:0.85rem;">&larr; Back</button>
       <span class="shop-title" style="margin-left:12px;">Shop</span>
     </div>
-    <div class="shop-stars" id="shop-stars"></div>
+    <div class="shop-stars" id="infshop-stars"></div>
   </div>
-  <div class="shop-grid" id="shop-grid"></div>
+  <div class="shop-grid" id="infshop-grid"></div>
 </div>
 
 <!-- TOUR SHOP -->
@@ -1001,6 +1092,9 @@ body {
     </div>
     <div class="tour-shop-stars" id="tourshop-stars"></div>
   </div>
+  <div class="shop-section-title">Permanent Upgrades</div>
+  <div class="shop-grid" id="tourshop-upgrades-grid"></div>
+  <div class="shop-section-title" style="margin-top:16px;">Consumables</div>
   <div class="shop-grid" id="tourshop-grid"></div>
 </div>
 
@@ -1012,8 +1106,8 @@ body {
   <div class="star-breakdown" id="star-breakdown"></div>
   <div id="gameover-tour-warning" style="display:none;color:var(--color-red);font-size:0.85rem;font-weight:700;margin-top:8px;"></div>
   <div class="gameover-buttons" id="gameover-buttons">
-    <button class="btn btn-primary" onclick="App.startRun()">Play Again</button>
-    <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
+    <button class="btn btn-primary" onclick="App.showScreen('infinite')">Play Again</button>
+    <button class="btn btn-accent" onclick="App.showScreen('infshop')">Shop</button>
     <button class="btn btn-secondary" onclick="App.showScreen('menu')">Menu</button>
   </div>
 </div>
@@ -1029,6 +1123,7 @@ body {
     <div class="tour-header-right">
       <span class="tour-progress" id="tour-progress"></span>
       <span class="tour-star-count" id="tour-star-count"></span>
+      <button class="btn btn-tour" id="btn-continue-tour" onclick="App.continueTourRun()" style="display:none;padding:6px 14px;font-size:0.75rem;">Continue</button>
     </div>
   </div>
   <div class="tour-map-container">
@@ -1193,18 +1288,26 @@ const WORLD_TOUR = [
 const WORLD_TOUR_BY_ID = {};
 WORLD_TOUR.forEach((level, idx) => { WORLD_TOUR_BY_ID[level.id] = level; });
 
-// ===== SAVE DATA =====
-const SaveData = {
+// ===== INFINITE SAVE (replaces old SaveData) =====
+const InfiniteSave = {
   stars: 0, totalStarsEarned: 0, upgrades: {}, bestScore: 0, totalRuns: 0, totalLinesCleared: 0,
 
   load() {
     try {
-      const d = JSON.parse(localStorage.getItem('blocktrek_save'));
+      // Migration: check for old 'blocktrek_save' key
+      const oldData = localStorage.getItem('blocktrek_save');
+      const newData = localStorage.getItem('blocktrek_infinite');
+      if (oldData && !newData) {
+        // Migrate old save to new key
+        localStorage.setItem('blocktrek_infinite', oldData);
+        localStorage.removeItem('blocktrek_save');
+      }
+      const d = JSON.parse(localStorage.getItem('blocktrek_infinite'));
       if (d) Object.assign(this, { stars: d.stars||0, totalStarsEarned: d.totalStarsEarned||0, upgrades: d.upgrades||{}, bestScore: d.bestScore||0, totalRuns: d.totalRuns||0, totalLinesCleared: d.totalLinesCleared||0 });
     } catch(e) {}
   },
   save() {
-    localStorage.setItem('blocktrek_save', JSON.stringify({ stars: this.stars, totalStarsEarned: this.totalStarsEarned, upgrades: this.upgrades, bestScore: this.bestScore, totalRuns: this.totalRuns, totalLinesCleared: this.totalLinesCleared }));
+    localStorage.setItem('blocktrek_infinite', JSON.stringify({ stars: this.stars, totalStarsEarned: this.totalStarsEarned, upgrades: this.upgrades, bestScore: this.bestScore, totalRuns: this.totalRuns, totalLinesCleared: this.totalLinesCleared }));
   },
   getTier(id) { return this.upgrades[id] || 0; },
   hasUpgrade(id, tier = 1) { return this.getTier(id) >= tier; },
@@ -1229,6 +1332,7 @@ const TourSave = {
   cleaners1x1: 0,
   cleaners2x2: 0,
   cleaners3x3: 0,
+  upgrades: {},
 
   load() {
     try {
@@ -1246,6 +1350,7 @@ const TourSave = {
         this.cleaners1x1 = d.cleaners1x1 || 0;
         this.cleaners2x2 = d.cleaners2x2 || 0;
         this.cleaners3x3 = d.cleaners3x3 || 0;
+        this.upgrades = d.upgrades || {};
       }
     } catch(e) {}
   },
@@ -1257,15 +1362,23 @@ const TourSave = {
       tourBombs: this.tourBombs, tourShuffles: this.tourShuffles,
       tourLives: this.tourLives,
       cleaners1x1: this.cleaners1x1, cleaners2x2: this.cleaners2x2,
-      cleaners3x3: this.cleaners3x3
+      cleaners3x3: this.cleaners3x3,
+      upgrades: this.upgrades
     }));
   },
   isUnlocked(id) { return this.unlocked.includes(id); },
   isCompleted(id) { return this.completed.includes(id); },
   complete(id) { if (!this.completed.includes(id)) this.completed.push(id); this.save(); },
   unlock(id) { if (!this.unlocked.includes(id)) this.unlocked.push(id); this.save(); },
+  getTier(id) { return this.upgrades[id] || 0; },
+  hasUpgrade(id, tier = 1) { return this.getTier(id) >= tier; },
+  purchase(id, cost) {
+    this.stars -= cost;
+    this.upgrades[id] = (this.upgrades[id] || 0) + 1;
+    this.save();
+  },
   fullReset() {
-    this.stars = 0;
+    // Stars and upgrades persist through death!
     this.unlocked = [0, 1];
     this.completed = [];
     this.bestScores = {};
@@ -1281,10 +1394,15 @@ const TourSave = {
   }
 };
 
+// ===== MODE-AWARE UPGRADE ACCESS =====
+function getUpgrades() {
+  return Game.tourMode ? TourSave : InfiniteSave;
+}
+
 // ===== PIECE FACTORY =====
 const PieceFactory = {
   generate(count = 3) {
-    const luckBonus = SaveData.getTier('smallLuck') * 0.08;
+    const luckBonus = getUpgrades().getTier('smallLuck') * 0.08;
     const smallW = 0.40 + luckBonus;
     const largeW = Math.max(0.05, 0.20 - luckBonus * 0.6);
     const medW = 1 - smallW - largeW;
@@ -1392,12 +1510,15 @@ const Board = {
     for (let i = 0; i < this.size; i++) {
       // A row is full if every cell is non-null, not wall, not stone, and not shard
       if (this.grid[i].every(c => c !== null && c.type !== 'wall' && c.type !== 'stone' && c.type !== 'shard')) rows.push(i);
-      let colFull = true;
-      for (let r = 0; r < this.size; r++) {
-        const c = this.grid[r][i];
-        if (c === null || c.type === 'wall' || c.type === 'stone' || c.type === 'shard') { colFull = false; break; }
+      // Only check columns in static mode (not falling mode)
+      if (!Game.fallingMode) {
+        let colFull = true;
+        for (let r = 0; r < this.size; r++) {
+          const c = this.grid[r][i];
+          if (c === null || c.type === 'wall' || c.type === 'stone' || c.type === 'shard') { colFull = false; break; }
+        }
+        if (colFull) cols.push(i);
       }
-      if (colFull) cols.push(i);
     }
     return { rows, cols };
   },
@@ -1431,6 +1552,28 @@ const Board = {
     return cleared;
   },
 
+  applyGravity() {
+    // For each column, compact all filled cells downward, respecting walls
+    for (let c = 0; c < this.size; c++) {
+      let writeRow = this.size - 1;
+      for (let r = this.size - 1; r >= 0; r--) {
+        const cell = this.grid[r][c];
+        if (cell && cell.type === 'wall') {
+          // Walls don't move; blocks above them stack on top of the wall
+          writeRow = r - 1;
+          continue;
+        }
+        if (cell && cell.type !== 'wall') {
+          if (r !== writeRow) {
+            this.grid[writeRow][c] = cell;
+            this.grid[r][c] = null;
+          }
+          writeRow--;
+        }
+      }
+    }
+  },
+
   canAnyFit(pieces) {
     for (const p of pieces) {
       if (!p || p.placed) continue;
@@ -1460,12 +1603,13 @@ const Game = {
   score: 0, streak: 0, maxStreak: 0, linesCleared: 0, turnsPlayed: 0,
   pieces: [], holdSlots: [], livesLeft: 0, bombsLeft: 0, shufflesLeft: 0,
   shieldTurns: 0, bombMode: false, cleanerMode: null, running: false,
-  tourMode: false, tourLevel: null,
+  tourMode: false, tourLevel: null, fallingMode: false,
 
-  start() {
+  start(gridSize, fallingMode) {
     this.tourMode = false;
     this.tourLevel = null;
-    Board.init(10);
+    this.fallingMode = !!fallingMode;
+    Board.init(gridSize || 10);
     this._initCommon();
     this.pieces = PieceFactory.generate(3);
     this.running = true;
@@ -1478,6 +1622,7 @@ const Game = {
     const level = WORLD_TOUR_BY_ID[levelIdx] || WORLD_TOUR.find(l => l.id === levelIdx);
     this.tourMode = true;
     this.tourLevel = level;
+    this.fallingMode = false;
     Board.init(level.grid, level);
     this._initCommon();
     this.pieces = PieceFactory.generate(3);
@@ -1498,7 +1643,8 @@ const Game = {
     this.bombMode = false;
     this.cleanerMode = null;
 
-    const holdCount = SaveData.getTier('hold1') + SaveData.getTier('hold2');
+    const ups = getUpgrades();
+    const holdCount = ups.getTier('hold1') + ups.getTier('hold2');
     this.holdSlots = Array(holdCount).fill(null);
 
     if (this.tourMode) {
@@ -1507,10 +1653,10 @@ const Game = {
       this.bombsLeft = TourSave.tourBombs;
       this.shufflesLeft = TourSave.tourShuffles;
     } else {
-      // Free play: consumables come from SaveData upgrades
-      this.livesLeft = SaveData.getTier('life1') + SaveData.getTier('life2') + SaveData.getTier('life3');
-      this.bombsLeft = SaveData.getTier('bomb');
-      this.shufflesLeft = SaveData.getTier('shuffle');
+      // Infinite play: consumables come from InfiniteSave upgrades
+      this.livesLeft = ups.getTier('life1') + ups.getTier('life2') + ups.getTier('life3');
+      this.bombsLeft = ups.getTier('bomb');
+      this.shufflesLeft = ups.getTier('shuffle');
     }
     this.shieldTurns = 0;
   },
@@ -1533,10 +1679,11 @@ const Game = {
 
   saveRun() {
     if (!this.running) return;
-    const key = this.tourMode ? 'blocktrek_tour_run' : 'blocktrek_run';
+    const key = this.tourMode ? 'blocktrek_tour_run' : 'blocktrek_infinite_run';
     localStorage.setItem(key, JSON.stringify({
       grid: Board.grid,
       gridSize: Board.size,
+      fallingMode: this.fallingMode,
       score: this.score, streak: this.streak, maxStreak: this.maxStreak,
       linesCleared: this.linesCleared, turnsPlayed: this.turnsPlayed,
       pieces: this.pieces, holdSlots: this.holdSlots,
@@ -1547,7 +1694,9 @@ const Game = {
     }));
   },
 
-  clearRunSave() {
+  clearInfiniteRunSave() {
+    localStorage.removeItem('blocktrek_infinite_run');
+    // Also clean up old key if it exists
     localStorage.removeItem('blocktrek_run');
   },
 
@@ -1555,16 +1704,27 @@ const Game = {
     localStorage.removeItem('blocktrek_tour_run');
   },
 
-  hasSavedRun() {
-    return !!localStorage.getItem('blocktrek_run');
+  hasSavedInfiniteRun() {
+    return !!localStorage.getItem('blocktrek_infinite_run') || !!localStorage.getItem('blocktrek_run');
   },
 
   hasSavedTourRun() {
     return !!localStorage.getItem('blocktrek_tour_run');
   },
 
-  resumeRun() {
-    return this._resume('blocktrek_run');
+  resumeInfiniteRun() {
+    // Try new key first, then old key for migration
+    let key = 'blocktrek_infinite_run';
+    if (!localStorage.getItem(key)) {
+      key = 'blocktrek_run';
+    }
+    const result = this._resume(key);
+    if (result && key === 'blocktrek_run') {
+      // Migrate: save under new key and remove old
+      localStorage.removeItem('blocktrek_run');
+      this.saveRun();
+    }
+    return result;
   },
 
   resumeTourRun() {
@@ -1584,6 +1744,7 @@ const Game = {
       this.shufflesLeft = d.shufflesLeft; this.shieldTurns = d.shieldTurns;
       this.bombMode = false;
       this.cleanerMode = null;
+      this.fallingMode = d.fallingMode || false;
       this.tourMode = d.tourMode || false;
       if (this.tourMode && d.tourLevelId !== null && d.tourLevelId !== undefined) {
         this.tourLevel = WORLD_TOUR_BY_ID[d.tourLevelId] || WORLD_TOUR.find(l => l.id === d.tourLevelId);
@@ -1628,12 +1789,12 @@ const Game = {
     const starSurvival = Math.floor(this.turnsPlayed / 10);
     const totalStars = starScore + starLines + starCombo + starSurvival;
 
-    // Tour stars go to TourSave, not SaveData
+    // Tour stars go to TourSave
     TourSave.stars += totalStars;
 
-    // Still track global stats
-    SaveData.totalLinesCleared += this.linesCleared;
-    SaveData.save();
+    // Still track global stats in InfiniteSave
+    InfiniteSave.totalLinesCleared += this.linesCleared;
+    InfiniteSave.save();
 
     // Mark completed and unlock next levels
     TourSave.complete(level.id);
@@ -1695,29 +1856,42 @@ const Game = {
       piece.placed = true;
     }
 
+    // Apply gravity after placement in falling mode
+    if (this.fallingMode) {
+      Board.applyGravity();
+      Renderer.renderBoard();
+    }
+
     // Check clears
     const { rows, cols } = Board.checkClears();
     const totalLines = rows.length + cols.length;
     let lineScore = 0;
+    const ups = getUpgrades();
 
     if (totalLines > 0) {
       // Animate clearing
       await Renderer.animateClear(rows, cols);
       Board.clearLines(rows, cols);
 
+      // Apply gravity again after clears in falling mode
+      if (this.fallingMode) {
+        Board.applyGravity();
+        Renderer.renderBoard();
+      }
+
       this.streak++;
       if (this.streak > this.maxStreak) this.maxStreak = this.streak;
       this.linesCleared += totalLines;
 
       const streakMult = 1 + 0.5 * (this.streak - 1);
-      const scoreMultBonus = SaveData.getTier('scoreMult') * 0.10;
+      const scoreMultBonus = ups.getTier('scoreMult') * 0.10;
       lineScore = Math.floor(totalLines * totalLines * 100 * streakMult * (1 + scoreMultBonus));
       this.score += lineScore;
 
       Renderer.showCombo(lineScore, this.streak, totalLines);
     } else {
       // No clear this turn
-      const shieldMax = SaveData.getTier('streakShield');
+      const shieldMax = ups.getTier('streakShield');
       if (this.streak > 0 && shieldMax > 0 && this.shieldTurns < shieldMax) {
         this.shieldTurns++;
       } else {
@@ -1727,7 +1901,7 @@ const Game = {
     }
 
     // Placement points
-    const scoreMultBonus = SaveData.getTier('scoreMult') * 0.10;
+    const scoreMultBonus = ups.getTier('scoreMult') * 0.10;
     this.score += Math.floor(cellCount * (1 + scoreMultBonus));
 
     Renderer.renderBoard();
@@ -1770,6 +1944,11 @@ const Game = {
       const { rows, cols } = Board.getMostFilledRowsCols(2);
       await Renderer.animateClear(rows, cols);
       Board.clearLines(rows, cols);
+
+      if (this.fallingMode) {
+        Board.applyGravity();
+      }
+
       this.streak = 0;
       this.shieldTurns = 0;
       Renderer.renderBoard();
@@ -1802,6 +1981,11 @@ const Game = {
       TourSave.save();
     }
     this.bombMode = false;
+
+    if (this.fallingMode) {
+      Board.applyGravity();
+    }
+
     Renderer.renderBoard();
     Renderer.renderHUD();
     Renderer.renderConsumables();
@@ -1925,7 +2109,7 @@ const Game = {
   },
 
   rotatePiece(pieceIdx) {
-    if (!SaveData.hasUpgrade('rotation')) return;
+    if (!getUpgrades().hasUpgrade('rotation')) return;
     const piece = this.pieces[pieceIdx];
     if (!piece || piece.placed) return;
     piece.cells = PieceFactory.rotateCW(piece.cells);
@@ -1943,13 +2127,13 @@ const Game = {
     if (this.tourMode) {
       this.clearTourRunSave();
     } else {
-      this.clearRunSave();
+      this.clearInfiniteRunSave();
     }
 
-    SaveData.totalRuns++;
-    SaveData.totalLinesCleared += this.linesCleared;
-    const isNewBest = !this.tourMode && this.score > SaveData.bestScore;
-    if (isNewBest) SaveData.bestScore = this.score;
+    InfiniteSave.totalRuns++;
+    InfiniteSave.totalLinesCleared += this.linesCleared;
+    const isNewBest = !this.tourMode && this.score > InfiniteSave.bestScore;
+    if (isNewBest) InfiniteSave.bestScore = this.score;
 
     // Calculate stars
     const starScore = Math.floor(this.score / 500);
@@ -1963,11 +2147,11 @@ const Game = {
       TourSave.stars += totalStars;
       TourSave.save();
     } else {
-      // Regular stars go to SaveData
-      SaveData.stars += totalStars;
-      SaveData.totalStarsEarned += totalStars;
+      // Regular stars go to InfiniteSave
+      InfiniteSave.stars += totalStars;
+      InfiniteSave.totalStarsEarned += totalStars;
     }
-    SaveData.save();
+    InfiniteSave.save();
 
     if (this.tourMode) {
       // Tour fail - full reset
@@ -2056,6 +2240,7 @@ const Renderer = {
 
   renderPieces() {
     this.trayEl.innerHTML = '';
+    const ups = getUpgrades();
     Game.pieces.forEach((piece, idx) => {
       const container = document.createElement('div');
       container.className = 'piece-container' + (piece.placed ? ' placed' : '');
@@ -2080,14 +2265,14 @@ const Renderer = {
         }
         container.appendChild(grid);
 
-        if (SaveData.hasUpgrade('rotation')) {
+        if (ups.hasUpgrade('rotation')) {
           const indicator = document.createElement('div');
           indicator.className = 'rotate-indicator';
           indicator.textContent = 'tap to rotate';
           container.appendChild(indicator);
         }
 
-        // Hold button removed — hold is now done by dragging piece to the hold box
+        // Hold button removed -- hold is now done by dragging piece to the hold box
       }
 
       this.trayEl.appendChild(container);
@@ -2102,11 +2287,12 @@ const Renderer = {
     } else {
       streakEl.textContent = '';
     }
+    const ups = getUpgrades();
     const livesEl = document.getElementById('hud-lives');
     if (Game.livesLeft > 0) {
       livesEl.textContent = '\u2764\uFE0F'.repeat(Game.livesLeft);
       livesEl.classList.remove('inactive');
-    } else if ((!Game.tourMode && SaveData.getTier('life1') > 0) || (Game.tourMode && (TourSave.tourLives > 0 || TourSave.bonusLives > 0))) {
+    } else if ((!Game.tourMode && ups.getTier('life1') > 0) || (Game.tourMode && (TourSave.tourLives > 0 || TourSave.bonusLives > 0))) {
       livesEl.textContent = '\uD83D\uDDA4';
       livesEl.classList.add('inactive');
     } else {
@@ -2190,9 +2376,10 @@ const Renderer = {
   renderConsumables() {
     const container = document.getElementById('consumables');
     container.innerHTML = '';
+    const ups = getUpgrades();
 
-    // Bomb button - show if player has bomb upgrade (free play) or tour bombs (tour mode)
-    const showBomb = Game.tourMode ? (Game.bombsLeft > 0 || TourSave.tourBombs > 0) : SaveData.getTier('bomb') > 0;
+    // Bomb button - show if player has bomb upgrade (infinite) or tour bombs (tour mode)
+    const showBomb = Game.tourMode ? (Game.bombsLeft > 0 || TourSave.tourBombs > 0) : ups.getTier('bomb') > 0;
     if (showBomb) {
       const btn = document.createElement('button');
       btn.className = 'consumable-btn' + (Game.bombMode ? ' active-mode' : '');
@@ -2211,7 +2398,7 @@ const Renderer = {
     }
 
     // Shuffle button
-    const showShuffle = Game.tourMode ? (Game.shufflesLeft > 0 || TourSave.tourShuffles > 0) : SaveData.getTier('shuffle') > 0;
+    const showShuffle = Game.tourMode ? (Game.shufflesLeft > 0 || TourSave.tourShuffles > 0) : ups.getTier('shuffle') > 0;
     if (showShuffle) {
       const btn = document.createElement('button');
       btn.className = 'consumable-btn';
@@ -2333,8 +2520,8 @@ const Renderer = {
     titleEl.style.color = 'var(--color-red)';
     warningEl.style.display = 'none';
     buttonsEl.innerHTML = `
-      <button class="btn btn-primary" onclick="App.startRun()">Play Again</button>
-      <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
+      <button class="btn btn-primary" onclick="App.showScreen('infinite')">Play Again</button>
+      <button class="btn btn-accent" onclick="App.showScreen('infshop')">Shop</button>
       <button class="btn btn-secondary" onclick="App.showScreen('menu')">Menu</button>
     `;
 
@@ -2365,7 +2552,7 @@ const Renderer = {
     titleEl.textContent = 'Tour Over!';
     titleEl.style.color = 'var(--color-red)';
     warningEl.style.display = 'block';
-    warningEl.textContent = 'All tour progress will be reset!';
+    warningEl.textContent = 'Tour progress will be reset (stars & upgrades kept)!';
 
     document.getElementById('gameover-best').style.display = 'none';
     document.getElementById('gameover-stats').innerHTML = `
@@ -2425,34 +2612,31 @@ const Renderer = {
   },
 
   renderMenu() {
-    document.getElementById('menu-stars').textContent = `\u2B50 ${SaveData.stars} Stars`;
-    document.getElementById('menu-stats').textContent = `Best: ${SaveData.bestScore.toLocaleString()}  |  Runs: ${SaveData.totalRuns}  |  Lines: ${SaveData.totalLinesCleared}`;
-    const continueBtn = document.getElementById('btn-continue');
-    if (Game.hasSavedRun()) {
+    document.getElementById('menu-tour-progress').textContent = `Tour: ${TourSave.completed.length}/${WORLD_TOUR.length}`;
+  },
+
+  renderInfiniteMenu() {
+    document.getElementById('inf-stars').textContent = `\u2B50 ${InfiniteSave.stars} Stars`;
+    document.getElementById('inf-stats').textContent = `Best: ${InfiniteSave.bestScore.toLocaleString()}  |  Runs: ${InfiniteSave.totalRuns}  |  Lines: ${InfiniteSave.totalLinesCleared}`;
+    const continueBtn = document.getElementById('btn-inf-continue');
+    if (Game.hasSavedInfiniteRun()) {
       continueBtn.style.display = '';
     } else {
       continueBtn.style.display = 'none';
     }
-    const continueTourBtn = document.getElementById('btn-continue-tour');
-    if (Game.hasSavedTourRun()) {
-      continueTourBtn.style.display = '';
-    } else {
-      continueTourBtn.style.display = 'none';
-    }
-    document.getElementById('menu-tour-progress').textContent = `Tour: ${TourSave.completed.length}/${WORLD_TOUR.length}`;
   },
 
-  renderShop() {
-    document.getElementById('shop-stars').textContent = `\u2B50 ${SaveData.stars}`;
-    const grid = document.getElementById('shop-grid');
+  renderInfiniteShop() {
+    document.getElementById('infshop-stars').textContent = `\u2B50 ${InfiniteSave.stars}`;
+    const grid = document.getElementById('infshop-grid');
     grid.innerHTML = '';
 
     UPGRADES.forEach(upg => {
-      const currentTier = SaveData.getTier(upg.id);
+      const currentTier = InfiniteSave.getTier(upg.id);
       const maxed = currentTier >= upg.maxTier;
       const cost = maxed ? 0 : upg.costs[currentTier];
-      const canAfford = SaveData.stars >= cost;
-      const reqMet = !upg.req || SaveData.hasUpgrade(upg.req);
+      const canAfford = InfiniteSave.stars >= cost;
+      const reqMet = !upg.req || InfiniteSave.hasUpgrade(upg.req);
       const locked = !reqMet;
 
       const card = document.createElement('div');
@@ -2491,8 +2675,8 @@ const Renderer = {
         const btn = card.querySelector('.btn-buy');
         if (btn && canAfford) {
           btn.addEventListener('click', () => {
-            SaveData.purchase(upg.id, cost);
-            this.renderShop();
+            InfiniteSave.purchase(upg.id, cost);
+            this.renderInfiniteShop();
           });
         }
       }
@@ -2503,6 +2687,65 @@ const Renderer = {
 
   renderTourShop() {
     document.getElementById('tourshop-stars').textContent = `\uD83D\uDC8E ${TourSave.stars}`;
+
+    // Render permanent upgrades section
+    const upgradesGrid = document.getElementById('tourshop-upgrades-grid');
+    upgradesGrid.innerHTML = '';
+
+    UPGRADES.forEach(upg => {
+      const currentTier = TourSave.getTier(upg.id);
+      const maxed = currentTier >= upg.maxTier;
+      const cost = maxed ? 0 : upg.costs[currentTier];
+      const canAfford = TourSave.stars >= cost;
+      const reqMet = !upg.req || TourSave.hasUpgrade(upg.req);
+      const locked = !reqMet;
+
+      const card = document.createElement('div');
+      card.className = 'upgrade-card' + (maxed ? ' owned' : '') + (locked ? ' locked' : '');
+
+      let tiersHTML = '';
+      if (upg.maxTier > 1) {
+        tiersHTML = '<div class="upgrade-tiers">' +
+          Array.from({ length: upg.maxTier }, (_, i) =>
+            `<div class="tier-dot${i < currentTier ? ' filled' : ''}"></div>`
+          ).join('') + '</div>';
+      }
+
+      let reqHTML = '';
+      if (locked) {
+        const reqUpg = UPGRADES.find(u => u.id === upg.req);
+        reqHTML = `<div class="upgrade-req">Requires: ${reqUpg?.name || upg.req}</div>`;
+      }
+
+      card.innerHTML = `
+        <div style="font-size:1.5rem;min-width:36px;text-align:center;">${upg.icon}</div>
+        <div class="upgrade-info">
+          <div class="upgrade-name">${upg.name}${upg.maxTier > 1 ? ` (${currentTier}/${upg.maxTier})` : ''}</div>
+          <div class="upgrade-desc">${upg.desc}</div>
+          ${tiersHTML}${reqHTML}
+        </div>
+        <div class="upgrade-action">
+          ${maxed ? '<span class="owned-badge">Owned \u2713</span>' :
+            locked ? '<span style="font-size:0.75rem;color:#666;">\uD83D\uDD12 Locked</span>' :
+            `<button class="btn-buy-tour" ${!canAfford ? 'disabled' : ''}>\uD83D\uDC8E ${cost}</button>`
+          }
+        </div>
+      `;
+
+      if (!maxed && !locked) {
+        const btn = card.querySelector('.btn-buy-tour');
+        if (btn && canAfford) {
+          btn.addEventListener('click', () => {
+            TourSave.purchase(upg.id, cost);
+            this.renderTourShop();
+          });
+        }
+      }
+
+      upgradesGrid.appendChild(card);
+    });
+
+    // Render consumables section
     const grid = document.getElementById('tourshop-grid');
     grid.innerHTML = '';
 
@@ -2542,6 +2785,13 @@ const Renderer = {
   renderTourMap() {
     document.getElementById('tour-progress').textContent = `${TourSave.completed.length}/${WORLD_TOUR.length}`;
     document.getElementById('tour-star-count').textContent = `\uD83D\uDC8E ${TourSave.stars}`;
+
+    const continueTourBtn = document.getElementById('btn-continue-tour');
+    if (Game.hasSavedTourRun()) {
+      continueTourBtn.style.display = '';
+    } else {
+      continueTourBtn.style.display = 'none';
+    }
 
     const mapInner = document.getElementById('tour-map-inner');
     // Remove old towns and svg lines (keep .tour-map-bg)
@@ -2813,7 +3063,7 @@ const DragController = {
     }
 
     if (this._pendingTrayDrag && !this.dragging) {
-      if (wasTap && SaveData.hasUpgrade('rotation')) {
+      if (wasTap && getUpgrades().hasUpgrade('rotation')) {
         Game.rotatePiece(this.dragPieceIdx);
       }
       this._pendingTrayDrag = false;
@@ -2904,8 +3154,11 @@ const DragController = {
 
 // ===== APP =====
 const App = {
+  _selectedGrid: 10,
+  _selectedMode: 'static',
+
   init() {
-    SaveData.load();
+    InfiniteSave.load();
     TourSave.load();
     Renderer.init(10);
     DragController.init();
@@ -2938,21 +3191,39 @@ const App = {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(`screen-${name}`).classList.add('active');
     if (name === 'menu') Renderer.renderMenu();
-    if (name === 'shop') Renderer.renderShop();
+    if (name === 'infinite') Renderer.renderInfiniteMenu();
+    if (name === 'infshop') Renderer.renderInfiniteShop();
     if (name === 'tourshop') Renderer.renderTourShop();
     if (name === 'tour') Renderer.renderTourMap();
     // Close tour detail if leaving tour screen
     if (name !== 'tour') Renderer.closeTourDetail();
   },
 
-  startRun() {
-    this.showScreen('game');
-    Game.start();
+  toggleRunConfig() {
+    const config = document.getElementById('run-config');
+    config.style.display = config.style.display === 'none' ? '' : 'none';
   },
 
-  continueRun() {
+  selectGrid(btn) {
+    btn.parentElement.querySelectorAll('.config-opt').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    this._selectedGrid = parseInt(btn.dataset.grid);
+  },
+
+  selectMode(btn) {
+    btn.parentElement.querySelectorAll('.config-opt').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    this._selectedMode = btn.dataset.mode;
+  },
+
+  startInfiniteRun() {
     this.showScreen('game');
-    Game.resumeRun();
+    Game.start(this._selectedGrid, this._selectedMode === 'falling');
+  },
+
+  continueInfiniteRun() {
+    this.showScreen('game');
+    Game.resumeInfiniteRun();
   },
 
   continueTourRun() {
@@ -2980,7 +3251,7 @@ const App = {
     if (Game.tourMode) {
       App.showScreen('tour');
     } else {
-      App.showScreen('menu');
+      App.showScreen('infinite');
     }
   }
 };
