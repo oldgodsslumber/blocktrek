@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BlockTrek</title>
+<style>
+:root {
+  --bg-dark: #0a0a1a;
+  --bg-card: #12122a;
+  --bg-board: #1a1a2e;
+  --bg-cell: #16213e;
+  --text-primary: #e0e0f0;
+  --text-secondary: #8888aa;
+  --accent: #ffd700;
+  --accent-glow: rgba(255, 215, 0, 0.3);
+  --color-cyan: #00d4ff;
+  --color-yellow: #ffd700;
+  --color-orange: #ff8c00;
+  --color-purple: #b44cff;
+  --color-green: #00e676;
+  --color-red: #ff4757;
+  --color-pink: #ff6b9d;
+  --color-white: #e0e0e0;
+  --board-size: min(85vw, 450px);
+  --cell-gap: 2px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+.screen.active { display: flex; }
+
+/* ===== MENU SCREEN ===== */
+#screen-menu {
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+}
+.menu-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-purple), var(--color-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.menu-stars {
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+.menu-stats {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.btn {
+  display: inline-block;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-purple));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+}
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid #333;
+}
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent), #ff8c00);
+  color: #111;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+.menu-buttons { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+/* ===== GAME SCREEN ===== */
+#screen-game { padding: 8px; gap: 8px; }
+
+.game-hud {
+  width: 100%;
+  max-width: var(--board-size);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+  font-size: 0.85rem;
+  gap: 8px;
+}
+.hud-left, .hud-right { display: flex; gap: 12px; align-items: center; }
+.hud-score { font-size: 1.3rem; font-weight: 900; }
+.hud-streak { color: var(--color-orange); font-weight: 700; }
+.hud-item { display: flex; align-items: center; gap: 3px; }
+.hud-item.inactive { opacity: 0.3; }
+
+.board-wrapper {
+  position: relative;
+  width: var(--board-size);
+  height: var(--board-size);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: var(--cell-gap);
+  width: 100%;
+  height: 100%;
+  background: var(--bg-board);
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.cell {
+  background: var(--bg-cell);
+  border-radius: 3px;
+  transition: background 0.1s;
+  position: relative;
+}
+.cell.filled {
+  background: var(--piece-color, #888);
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.15);
+}
+.cell.ghost {
+  background: var(--piece-color, #888);
+  opacity: 0.35;
+}
+.cell.invalid-ghost {
+  background: var(--color-red);
+  opacity: 0.25;
+}
+.cell.clearing {
+  background: #fff !important;
+  transform: scale(1.08);
+  transition: transform 0.15s, background 0.15s;
+}
+.cell.clearing-out {
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.25s ease-in, opacity 0.25s ease-in;
+}
+.cell.rescue-glow {
+  background: var(--accent) !important;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.combo-popup {
+  position: absolute;
+  pointer-events: none;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255,255,255,0.5);
+  z-index: 20;
+  animation: popupRise 0.8s ease-out forwards;
+}
+.combo-popup.fire { text-shadow: 0 0 15px var(--color-orange), 0 0 30px var(--color-red); }
+
+@keyframes popupRise {
+  0% { transform: translateY(0) scale(1.2); opacity: 1; }
+  100% { transform: translateY(-50px) scale(0.8); opacity: 0; }
+}
+
+/* Tools row: hold slots + consumables */
+.tools-row {
+  width: 100%;
+  max-width: var(--board-size);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.hold-slots { display: flex; gap: 6px; }
+.hold-slot {
+  width: 52px;
+  height: 52px;
+  border: 2px dashed #444;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  position: relative;
+}
+.hold-slot.occupied { border-style: solid; border-color: #666; }
+.hold-slot-label {
+  position: absolute;
+  bottom: -14px;
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.consumables { display: flex; gap: 6px; }
+.consumable-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 2px solid #444;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.2s, opacity 0.2s;
+}
+.consumable-btn:disabled { opacity: 0.3; cursor: default; }
+.consumable-btn .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--color-red);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.consumable-btn.active-mode {
+  border-color: var(--color-red);
+  box-shadow: 0 0 10px rgba(255, 71, 87, 0.4);
+}
+
+/* Piece Tray */
+.piece-tray {
+  width: 100%;
+  max-width: var(--board-size);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  min-height: 80px;
+}
+
+.piece-container {
+  cursor: grab;
+  touch-action: none;
+  padding: 4px;
+  border-radius: 6px;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.piece-container:active { cursor: grabbing; }
+.piece-container.placed { opacity: 0; pointer-events: none; }
+.piece-container.dragging { opacity: 0.3; }
+
+.piece-grid {
+  display: grid;
+  gap: 2px;
+}
+.piece-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--piece-color, #888);
+  box-shadow: inset 0 -1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.15);
+}
+.piece-cell.empty { background: transparent; box-shadow: none; }
+
+.rotate-indicator {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Hold button on each piece (shown when rotation + hold both unlocked) */
+.piece-hold-btn {
+  display: block;
+  margin: 3px auto 0;
+  padding: 2px 10px;
+  background: var(--bg-card);
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.55rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.piece-hold-btn:active { background: #333; }
+
+/* Floating drag piece */
+.drag-float {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+.drag-float .piece-cell {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* Pause button */
+.pause-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ===== SHOP SCREEN ===== */
+#screen-shop {
+  gap: 16px;
+  padding-bottom: 40px;
+}
+.shop-header {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.shop-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
+.shop-stars { color: var(--accent); font-weight: 700; }
+.shop-grid {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.upgrade-card {
+  background: var(--bg-card);
+  border: 2px solid #222;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+.upgrade-card.owned { border-color: var(--color-green); opacity: 0.7; }
+.upgrade-card.locked { opacity: 0.4; }
+.upgrade-info { flex: 1; }
+.upgrade-name { font-weight: 700; font-size: 0.95rem; }
+.upgrade-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; }
+.upgrade-tiers { display: flex; gap: 4px; margin-top: 5px; }
+.tier-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #333;
+}
+.tier-dot.filled { background: var(--color-green); }
+.upgrade-req { font-size: 0.65rem; color: var(--color-orange); margin-top: 3px; }
+.upgrade-action { text-align: center; min-width: 80px; }
+.btn-buy {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.btn-buy:active { transform: scale(0.95); }
+.btn-buy:disabled { background: #444; color: #888; cursor: default; }
+.owned-badge {
+  color: var(--color-green);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* ===== GAME OVER SCREEN ===== */
+#screen-gameover {
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+.gameover-title {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-red);
+}
+.gameover-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.gameover-stats .label { color: var(--text-secondary); }
+.gameover-stats .value { font-weight: 700; text-align: right; }
+.star-breakdown {
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px 24px;
+  min-width: 220px;
+}
+.star-breakdown h3 {
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.star-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 2px 0;
+}
+.star-row.total {
+  border-top: 1px solid #333;
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.new-best { color: var(--color-green); font-weight: 700; font-size: 0.9rem; }
+.gameover-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* ===== RESCUE OVERLAY ===== */
+.rescue-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 215, 0, 0.15);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rescueFlash 0.6s ease-out forwards;
+  pointer-events: none;
+}
+.rescue-text {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent);
+  animation: rescuePulse 0.6s ease-out;
+}
+@keyframes rescueFlash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rescuePulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .menu-title { font-size: 1.8rem; }
+  .hud-score { font-size: 1.1rem; }
+  .piece-tray { gap: 10px; }
+  .hold-slot { width: 44px; height: 44px; }
+}
+@media (min-width: 601px) {
+  #screen-game { padding-top: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-title">BlockTrek</div>
+  <div class="menu-stars" id="menu-stars"></div>
+  <div class="menu-buttons">
+    <button class="btn btn-primary" onclick="App.startRun()">Start Run</button>
+    <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
+  </div>
+  <div class="menu-stats" id="menu-stats"></div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="game-hud">
+    <div class="hud-left">
+      <span class="hud-score" id="hud-score">0</span>
+      <span class="hud-streak" id="hud-streak"></span>
+    </div>
+    <div class="hud-right">
+      <span class="hud-item" id="hud-lives" title="Lives"></span>
+      <button class="pause-btn" onclick="App.showScreen('menu')" title="Menu">&#9776;</button>
+    </div>
+  </div>
+  <div class="board-wrapper" id="board-wrapper">
+    <div class="board" id="board"></div>
+  </div>
+  <div class="tools-row">
+    <div class="hold-slots" id="hold-slots"></div>
+    <div class="consumables" id="consumables"></div>
+  </div>
+  <div class="piece-tray" id="piece-tray"></div>
+</div>
+
+<!-- SHOP -->
+<div id="screen-shop" class="screen">
+  <div class="shop-header">
+    <div>
+      <button class="btn btn-secondary" onclick="App.showScreen('menu')" style="padding:8px 16px;font-size:0.85rem;">&larr; Back</button>
+      <span class="shop-title" style="margin-left:12px;">Shop</span>
+    </div>
+    <div class="shop-stars" id="shop-stars"></div>
+  </div>
+  <div class="shop-grid" id="shop-grid"></div>
+</div>
+
+<!-- GAME OVER -->
+<div id="screen-gameover" class="screen">
+  <div class="gameover-title">Run Over</div>
+  <div id="gameover-best" class="new-best" style="display:none;">New Best Score!</div>
+  <div class="gameover-stats" id="gameover-stats"></div>
+  <div class="star-breakdown" id="star-breakdown"></div>
+  <div class="gameover-buttons">
+    <button class="btn btn-primary" onclick="App.startRun()">Play Again</button>
+    <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
+    <button class="btn btn-secondary" onclick="App.showScreen('menu')">Menu</button>
+  </div>
+</div>
+
+<script>
+// ===== CONSTANTS =====
+const GRID = 10;
+
+const COLORS = {
+  '1x1': 'var(--color-white)', '1x2': 'var(--color-cyan)', '2x1': 'var(--color-cyan)',
+  '1x3': 'var(--color-cyan)', '3x1': 'var(--color-cyan)', '2x2': 'var(--color-yellow)',
+  'L-right': 'var(--color-orange)', 'L-left': 'var(--color-orange)',
+  'L-up': 'var(--color-orange)', 'L-down': 'var(--color-orange)',
+  'T-shape': 'var(--color-purple)', 'T-down': 'var(--color-purple)',
+  'T-right': 'var(--color-purple)', 'T-left': 'var(--color-purple)',
+  'S-shape': 'var(--color-green)', 'Z-shape': 'var(--color-green)',
+  '1x4': 'var(--color-cyan)', '4x1': 'var(--color-cyan)',
+  '3x3': 'var(--color-red)', '3x3-L': 'var(--color-pink)',
+  '3x3-L2': 'var(--color-pink)', '3x3-L3': 'var(--color-pink)', '3x3-L4': 'var(--color-pink)',
+  '1x5': 'var(--color-cyan)', '5x1': 'var(--color-cyan)',
+};
+
+const SHAPES = [
+  { name: '1x1', cells: [[0,0]], size: 'small' },
+  { name: '1x2', cells: [[0,0],[0,1]], size: 'small' },
+  { name: '2x1', cells: [[0,0],[1,0]], size: 'small' },
+  { name: '1x3', cells: [[0,0],[0,1],[0,2]], size: 'small' },
+  { name: '3x1', cells: [[0,0],[1,0],[2,0]], size: 'small' },
+  { name: '2x2', cells: [[0,0],[0,1],[1,0],[1,1]], size: 'small' },
+  { name: 'L-right', cells: [[0,0],[1,0],[2,0],[2,1]], size: 'medium' },
+  { name: 'L-left', cells: [[0,1],[1,1],[2,1],[2,0]], size: 'medium' },
+  { name: 'L-up', cells: [[0,0],[0,1],[0,2],[1,0]], size: 'medium' },
+  { name: 'L-down', cells: [[0,0],[0,1],[0,2],[1,2]], size: 'medium' },
+  { name: 'T-shape', cells: [[0,0],[0,1],[0,2],[1,1]], size: 'medium' },
+  { name: 'T-down', cells: [[0,0],[1,0],[1,1],[2,0]], size: 'medium' },
+  { name: 'T-right', cells: [[0,0],[0,1],[1,0],[2,0]], size: 'medium' },
+  { name: 'T-left', cells: [[0,1],[1,0],[1,1],[2,1]], size: 'medium' },
+  { name: 'S-shape', cells: [[0,1],[0,2],[1,0],[1,1]], size: 'medium' },
+  { name: 'Z-shape', cells: [[0,0],[0,1],[1,1],[1,2]], size: 'medium' },
+  { name: '1x4', cells: [[0,0],[0,1],[0,2],[0,3]], size: 'medium' },
+  { name: '4x1', cells: [[0,0],[1,0],[2,0],[3,0]], size: 'medium' },
+  { name: '3x3', cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]], size: 'large' },
+  { name: '3x3-L', cells: [[0,0],[1,0],[2,0],[2,1],[2,2]], size: 'large' },
+  { name: '3x3-L2', cells: [[0,0],[0,1],[0,2],[1,0],[2,0]], size: 'large' },
+  { name: '3x3-L3', cells: [[0,0],[0,1],[0,2],[1,2],[2,2]], size: 'large' },
+  { name: '3x3-L4', cells: [[0,2],[1,2],[2,0],[2,1],[2,2]], size: 'large' },
+  { name: '1x5', cells: [[0,0],[0,1],[0,2],[0,3],[0,4]], size: 'large' },
+  { name: '5x1', cells: [[0,0],[1,0],[2,0],[3,0],[4,0]], size: 'large' },
+];
+
+const UPGRADES = [
+  { id: 'ghostPreview', name: 'Ghost Preview', desc: 'Shows a translucent preview where pieces will land while dragging.', maxTier: 1, costs: [15], icon: '👻', req: null },
+  { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it. Tap held piece to retrieve.', maxTier: 1, costs: [30], icon: '📦', req: null },
+  { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90° clockwise before placing.', maxTier: 1, costs: [50], icon: '🔄', req: null },
+  { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [35, 75, 140], icon: '🍀', req: null },
+  { id: 'shuffle', name: 'Shuffle', desc: 'Re-roll all current tray pieces. Limited uses per run.', maxTier: 3, costs: [40, 70, 120], icon: '🔀', req: null },
+  { id: 'scoreMult', name: 'Score Multiplier', desc: 'Permanent bonus to all score earned (+10% per tier).', maxTier: 4, costs: [45, 90, 160, 280], icon: '✖️', req: null },
+  { id: 'streakShield', name: 'Streak Shield', desc: 'Your combo streak doesn\'t reset for missed turns.', maxTier: 2, costs: [60, 130], icon: '🛡️', req: null },
+  { id: 'bomb', name: 'Bomb', desc: 'Clears a 3×3 area. Tap the board to detonate. Limited per run.', maxTier: 3, costs: [55, 100, 180], icon: '💣', req: null },
+  { id: 'life1', name: 'Extra Life', desc: 'When stuck, rescue clears the most-filled rows & columns.', maxTier: 1, costs: [80], icon: '❤️', req: null },
+  { id: 'hold2', name: 'Hold Slot 2', desc: 'A second hold slot for even more flexibility.', maxTier: 1, costs: [100], icon: '📦', req: 'hold1' },
+  { id: 'life2', name: 'Extra Life 2', desc: 'A second rescue charge per run.', maxTier: 1, costs: [200], icon: '❤️', req: 'life1' },
+  { id: 'life3', name: 'Extra Life 3', desc: 'A third rescue charge per run.', maxTier: 1, costs: [400], icon: '❤️', req: 'life2' },
+];
+
+// ===== SAVE DATA =====
+const SaveData = {
+  stars: 0, totalStarsEarned: 0, upgrades: {}, bestScore: 0, totalRuns: 0, totalLinesCleared: 0,
+
+  load() {
+    try {
+      const d = JSON.parse(localStorage.getItem('blocktrek_save'));
+      if (d) Object.assign(this, { stars: d.stars||0, totalStarsEarned: d.totalStarsEarned||0, upgrades: d.upgrades||{}, bestScore: d.bestScore||0, totalRuns: d.totalRuns||0, totalLinesCleared: d.totalLinesCleared||0 });
+    } catch(e) {}
+  },
+  save() {
+    localStorage.setItem('blocktrek_save', JSON.stringify({ stars: this.stars, totalStarsEarned: this.totalStarsEarned, upgrades: this.upgrades, bestScore: this.bestScore, totalRuns: this.totalRuns, totalLinesCleared: this.totalLinesCleared }));
+  },
+  getTier(id) { return this.upgrades[id] || 0; },
+  hasUpgrade(id, tier = 1) { return this.getTier(id) >= tier; },
+  purchase(id, cost) {
+    this.stars -= cost;
+    this.upgrades[id] = (this.upgrades[id] || 0) + 1;
+    this.save();
+  }
+};
+
+// ===== PIECE FACTORY =====
+const PieceFactory = {
+  generate(count = 3) {
+    const luckBonus = SaveData.getTier('smallLuck') * 0.08;
+    const smallW = 0.40 + luckBonus;
+    const largeW = Math.max(0.05, 0.20 - luckBonus * 0.6);
+    const medW = 1 - smallW - largeW;
+    const pieces = [];
+    for (let i = 0; i < count; i++) {
+      const r = Math.random();
+      const sizeFilter = r < smallW ? 'small' : r < smallW + medW ? 'medium' : 'large';
+      const pool = SHAPES.filter(s => s.size === sizeFilter);
+      const shape = pool[Math.floor(Math.random() * pool.length)];
+      pieces.push({
+        id: i,
+        name: shape.name,
+        cells: shape.cells.map(c => [...c]),
+        color: COLORS[shape.name] || 'var(--color-white)',
+        placed: false,
+        rotation: 0
+      });
+    }
+    return pieces;
+  },
+
+  rotateCW(cells) {
+    const maxR = Math.max(...cells.map(c => c[0]));
+    return cells.map(([r, c]) => [c, maxR - r]);
+  },
+
+  getBounds(cells) {
+    let maxR = 0, maxC = 0;
+    cells.forEach(([r, c]) => { maxR = Math.max(maxR, r); maxC = Math.max(maxC, c); });
+    return { rows: maxR + 1, cols: maxC + 1 };
+  }
+};
+
+// ===== BOARD =====
+const Board = {
+  grid: [],
+
+  init() {
+    this.grid = Array.from({ length: GRID }, () => Array(GRID).fill(null));
+  },
+
+  canPlace(cells, row, col) {
+    return cells.every(([r, c]) => {
+      const gr = row + r, gc = col + c;
+      return gr >= 0 && gr < GRID && gc >= 0 && gc < GRID && !this.grid[gr][gc];
+    });
+  },
+
+  place(cells, row, col, color) {
+    const placed = [];
+    cells.forEach(([r, c]) => {
+      this.grid[row + r][col + c] = color;
+      placed.push([row + r, col + c]);
+    });
+    return placed;
+  },
+
+  checkClears() {
+    const rows = [], cols = [];
+    for (let i = 0; i < GRID; i++) {
+      if (this.grid[i].every(c => c !== null)) rows.push(i);
+      if (this.grid.every(r => r[i] !== null)) cols.push(i);
+    }
+    return { rows, cols };
+  },
+
+  clearLines(rows, cols) {
+    const cleared = new Set();
+    rows.forEach(r => { for (let c = 0; c < GRID; c++) { cleared.add(`${r},${c}`); this.grid[r][c] = null; } });
+    cols.forEach(c => { for (let r = 0; r < GRID; r++) { cleared.add(`${r},${c}`); this.grid[r][c] = null; } });
+    return cleared;
+  },
+
+  canAnyFit(pieces) {
+    for (const p of pieces) {
+      if (!p || p.placed) continue;
+      for (let r = 0; r < GRID; r++) {
+        for (let c = 0; c < GRID; c++) {
+          if (this.canPlace(p.cells, r, c)) return true;
+        }
+      }
+    }
+    return false;
+  },
+
+  getMostFilledRowsCols(n) {
+    const rowFill = this.grid.map((row, i) => ({ idx: i, count: row.filter(c => c !== null).length }));
+    const colFill = Array.from({ length: GRID }, (_, i) => ({ idx: i, count: this.grid.filter(r => r[i] !== null).length }));
+    rowFill.sort((a, b) => b.count - a.count);
+    colFill.sort((a, b) => b.count - a.count);
+    return {
+      rows: rowFill.slice(0, n).filter(r => r.count > 0).map(r => r.idx),
+      cols: colFill.slice(0, n).filter(c => c.count > 0).map(c => c.idx)
+    };
+  }
+};
+
+// ===== GAME STATE =====
+const Game = {
+  score: 0, streak: 0, maxStreak: 0, linesCleared: 0, turnsPlayed: 0,
+  pieces: [], holdSlots: [], livesLeft: 0, bombsLeft: 0, shufflesLeft: 0,
+  shieldTurns: 0, bombMode: false, running: false,
+
+  start() {
+    Board.init();
+    this.score = 0; this.streak = 0; this.maxStreak = 0;
+    this.linesCleared = 0; this.turnsPlayed = 0;
+    this.bombMode = false;
+
+    // Init from upgrades
+    const holdCount = SaveData.getTier('hold1') + SaveData.getTier('hold2');
+    this.holdSlots = Array(holdCount).fill(null);
+    this.livesLeft = SaveData.getTier('life1') + SaveData.getTier('life2') + SaveData.getTier('life3');
+    this.bombsLeft = SaveData.getTier('bomb');
+    this.shufflesLeft = SaveData.getTier('shuffle');
+    this.shieldTurns = 0;
+
+    this.pieces = PieceFactory.generate(3);
+    this.running = true;
+    Renderer.renderAll();
+  },
+
+  getAllActivePieces() {
+    const all = [...this.pieces.filter(p => !p.placed)];
+    this.holdSlots.forEach(p => { if (p) all.push(p); });
+    return all;
+  },
+
+  async placePiece(pieceIdx, row, col, fromHold = false) {
+    const piece = fromHold ? this.holdSlots[pieceIdx] : this.pieces[pieceIdx];
+    if (!piece || piece.placed) return false;
+    if (!Board.canPlace(piece.cells, row, col)) return false;
+
+    Board.place(piece.cells, row, col, piece.color);
+    const cellCount = piece.cells.length;
+
+    if (fromHold) {
+      this.holdSlots[pieceIdx] = null;
+    } else {
+      piece.placed = true;
+    }
+
+    // Check clears
+    const { rows, cols } = Board.checkClears();
+    const totalLines = rows.length + cols.length;
+    let lineScore = 0;
+
+    if (totalLines > 0) {
+      // Animate clearing
+      await Renderer.animateClear(rows, cols);
+      Board.clearLines(rows, cols);
+
+      this.streak++;
+      if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+      this.linesCleared += totalLines;
+
+      const streakMult = 1 + 0.5 * (this.streak - 1);
+      const scoreMultBonus = SaveData.getTier('scoreMult') * 0.10;
+      lineScore = Math.floor(totalLines * totalLines * 100 * streakMult * (1 + scoreMultBonus));
+      this.score += lineScore;
+
+      Renderer.showCombo(lineScore, this.streak, totalLines);
+    } else {
+      // No clear this turn
+      const shieldMax = SaveData.getTier('streakShield');
+      if (this.streak > 0 && shieldMax > 0 && this.shieldTurns < shieldMax) {
+        this.shieldTurns++;
+      } else {
+        this.streak = 0;
+        this.shieldTurns = 0;
+      }
+    }
+
+    // Placement points
+    const scoreMultBonus = SaveData.getTier('scoreMult') * 0.10;
+    this.score += Math.floor(cellCount * (1 + scoreMultBonus));
+
+    Renderer.renderBoard();
+    Renderer.renderPieces();
+    Renderer.renderHUD();
+
+    // Check if all tray pieces placed -> new round
+    if (this.pieces.every(p => p.placed)) {
+      this.turnsPlayed++;
+      this.pieces = PieceFactory.generate(3);
+      Renderer.renderPieces();
+    }
+
+    // Check game over
+    if (!Board.canAnyFit(this.getAllActivePieces())) {
+      await this.handleStuck();
+    }
+
+    return true;
+  },
+
+  async handleStuck() {
+    if (this.livesLeft > 0) {
+      this.livesLeft--;
+      await Renderer.showRescue();
+      const { rows, cols } = Board.getMostFilledRowsCols(2);
+      await Renderer.animateClear(rows, cols);
+      Board.clearLines(rows, cols);
+      this.streak = 0;
+      this.shieldTurns = 0;
+      Renderer.renderBoard();
+      Renderer.renderHUD();
+
+      // Still stuck after rescue?
+      if (!Board.canAnyFit(this.getAllActivePieces())) {
+        this.endRun();
+      }
+    } else {
+      this.endRun();
+    }
+  },
+
+  async useBomb(row, col) {
+    let cleared = 0;
+    for (let r = row - 1; r <= row + 1; r++) {
+      for (let c = col - 1; c <= col + 1; c++) {
+        if (r >= 0 && r < GRID && c >= 0 && c < GRID && Board.grid[r][c]) {
+          Board.grid[r][c] = null;
+          cleared++;
+        }
+      }
+    }
+    this.bombsLeft--;
+    this.bombMode = false;
+    Renderer.renderBoard();
+    Renderer.renderHUD();
+    Renderer.renderConsumables();
+
+    // Check if pieces can now fit
+    if (!Board.canAnyFit(this.getAllActivePieces())) {
+      await this.handleStuck();
+    }
+  },
+
+  useShuffle() {
+    if (this.shufflesLeft <= 0) return;
+    this.shufflesLeft--;
+    // Re-roll unplaced pieces only
+    const newPieces = PieceFactory.generate(3);
+    this.pieces.forEach((p, i) => {
+      if (!p.placed) {
+        this.pieces[i] = newPieces[i];
+        this.pieces[i].id = i;
+      }
+    });
+    Renderer.renderPieces();
+    Renderer.renderConsumables();
+  },
+
+  holdPiece(pieceIdx) {
+    if (this.holdSlots.length === 0) return;
+    const piece = this.pieces[pieceIdx];
+    if (!piece || piece.placed) return;
+
+    // Find empty hold slot
+    let slotIdx = this.holdSlots.findIndex(s => s === null);
+    if (slotIdx === -1) {
+      // Swap with first hold slot
+      slotIdx = 0;
+      const held = this.holdSlots[slotIdx];
+      this.holdSlots[slotIdx] = { ...piece };
+      this.pieces[pieceIdx] = held;
+      held.id = pieceIdx;
+      held.placed = false;
+    } else {
+      this.holdSlots[slotIdx] = { ...piece };
+      // Mark tray slot as empty placeholder
+      this.pieces[pieceIdx] = { id: pieceIdx, name: '', cells: [[0,0]], color: '', placed: true, rotation: 0 };
+    }
+
+    Renderer.renderPieces();
+    Renderer.renderHoldSlots();
+  },
+
+  retrieveHold(slotIdx) {
+    const piece = this.holdSlots[slotIdx];
+    if (!piece) return;
+    // Find empty tray spot
+    const emptyIdx = this.pieces.findIndex(p => p.placed);
+    if (emptyIdx === -1) return; // tray full
+    this.pieces[emptyIdx] = piece;
+    piece.id = emptyIdx;
+    piece.placed = false;
+    this.holdSlots[slotIdx] = null;
+    Renderer.renderPieces();
+    Renderer.renderHoldSlots();
+  },
+
+  rotatePiece(pieceIdx) {
+    if (!SaveData.hasUpgrade('rotation')) return;
+    const piece = this.pieces[pieceIdx];
+    if (!piece || piece.placed) return;
+    piece.cells = PieceFactory.rotateCW(piece.cells);
+    // Normalize to start from 0,0
+    const minR = Math.min(...piece.cells.map(c => c[0]));
+    const minC = Math.min(...piece.cells.map(c => c[1]));
+    piece.cells = piece.cells.map(([r, c]) => [r - minR, c - minC]);
+    piece.rotation = (piece.rotation + 1) % 4;
+    Renderer.renderPieces();
+  },
+
+  endRun() {
+    this.running = false;
+    SaveData.totalRuns++;
+    SaveData.totalLinesCleared += this.linesCleared;
+    const isNewBest = this.score > SaveData.bestScore;
+    if (isNewBest) SaveData.bestScore = this.score;
+
+    // Calculate stars
+    const starScore = Math.floor(this.score / 500);
+    const starLines = Math.floor(this.linesCleared / 5);
+    const starCombo = Math.floor(this.maxStreak * 2);
+    const starSurvival = Math.floor(this.turnsPlayed / 10);
+    const totalStars = starScore + starLines + starCombo + starSurvival;
+
+    SaveData.stars += totalStars;
+    SaveData.totalStarsEarned += totalStars;
+    SaveData.save();
+
+    Renderer.showGameOver({
+      score: this.score, lines: this.linesCleared, maxStreak: this.maxStreak,
+      turns: this.turnsPlayed, starScore, starLines, starCombo, starSurvival,
+      totalStars, isNewBest
+    });
+  }
+};
+
+// ===== RENDERER =====
+const Renderer = {
+  boardEl: null, trayEl: null,
+
+  init() {
+    this.boardEl = document.getElementById('board');
+    this.trayEl = document.getElementById('piece-tray');
+    // Create board cells
+    this.boardEl.innerHTML = '';
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        this.boardEl.appendChild(cell);
+      }
+    }
+  },
+
+  renderAll() {
+    this.renderBoard();
+    this.renderPieces();
+    this.renderHUD();
+    this.renderHoldSlots();
+    this.renderConsumables();
+  },
+
+  renderBoard() {
+    const cells = this.boardEl.children;
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = cells[r * GRID + c];
+        const val = Board.grid[r][c];
+        cell.className = 'cell' + (val ? ' filled' : '');
+        cell.style.setProperty('--piece-color', val || '');
+      }
+    }
+  },
+
+  renderPieces() {
+    this.trayEl.innerHTML = '';
+    Game.pieces.forEach((piece, idx) => {
+      const container = document.createElement('div');
+      container.className = 'piece-container' + (piece.placed ? ' placed' : '');
+      container.dataset.pieceIdx = idx;
+
+      if (!piece.placed && piece.cells.length > 0) {
+        const bounds = PieceFactory.getBounds(piece.cells);
+        const grid = document.createElement('div');
+        grid.className = 'piece-grid';
+        const cellSize = Math.min(28, (window.innerWidth * 0.75 - 60) / (3 * 5));
+        grid.style.gridTemplateColumns = `repeat(${bounds.cols}, ${cellSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${bounds.rows}, ${cellSize}px)`;
+        grid.style.setProperty('--piece-color', piece.color);
+
+        const cellSet = new Set(piece.cells.map(([r,c]) => `${r},${c}`));
+        for (let r = 0; r < bounds.rows; r++) {
+          for (let c = 0; c < bounds.cols; c++) {
+            const cell = document.createElement('div');
+            cell.className = cellSet.has(`${r},${c}`) ? 'piece-cell' : 'piece-cell empty';
+            grid.appendChild(cell);
+          }
+        }
+        container.appendChild(grid);
+
+        if (SaveData.hasUpgrade('rotation')) {
+          const indicator = document.createElement('div');
+          indicator.className = 'rotate-indicator';
+          indicator.textContent = 'tap to rotate';
+          container.appendChild(indicator);
+        }
+
+        // Show hold button when both rotation and hold are unlocked
+        if (SaveData.hasUpgrade('rotation') && Game.holdSlots.length > 0) {
+          const holdBtn = document.createElement('button');
+          holdBtn.className = 'piece-hold-btn';
+          holdBtn.textContent = 'hold';
+          holdBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            Game.holdPiece(idx);
+          });
+          holdBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+          holdBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+          container.appendChild(holdBtn);
+        }
+      }
+
+      this.trayEl.appendChild(container);
+    });
+  },
+
+  renderHUD() {
+    document.getElementById('hud-score').textContent = Game.score.toLocaleString();
+    const streakEl = document.getElementById('hud-streak');
+    if (Game.streak > 0) {
+      streakEl.textContent = '🔥 x' + Game.streak;
+    } else {
+      streakEl.textContent = '';
+    }
+    const livesEl = document.getElementById('hud-lives');
+    if (Game.livesLeft > 0) {
+      livesEl.textContent = '❤️'.repeat(Game.livesLeft);
+      livesEl.classList.remove('inactive');
+    } else if (SaveData.getTier('life1') > 0) {
+      livesEl.textContent = '🖤';
+      livesEl.classList.add('inactive');
+    } else {
+      livesEl.textContent = '';
+    }
+  },
+
+  renderHoldSlots() {
+    const container = document.getElementById('hold-slots');
+    container.innerHTML = '';
+    Game.holdSlots.forEach((piece, idx) => {
+      const slot = document.createElement('div');
+      slot.className = 'hold-slot' + (piece ? ' occupied' : '');
+      slot.dataset.holdIdx = idx;
+
+      if (piece) {
+        const bounds = PieceFactory.getBounds(piece.cells);
+        const grid = document.createElement('div');
+        grid.className = 'piece-grid';
+        const cellSize = 9;
+        grid.style.gridTemplateColumns = `repeat(${bounds.cols}, ${cellSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${bounds.rows}, ${cellSize}px)`;
+        grid.style.setProperty('--piece-color', piece.color);
+        const cellSet = new Set(piece.cells.map(([r,c]) => `${r},${c}`));
+        for (let r = 0; r < bounds.rows; r++) {
+          for (let c = 0; c < bounds.cols; c++) {
+            const cell = document.createElement('div');
+            cell.className = cellSet.has(`${r},${c}`) ? 'piece-cell' : 'piece-cell empty';
+            grid.appendChild(cell);
+          }
+        }
+        slot.appendChild(grid);
+      }
+
+      const label = document.createElement('div');
+      label.className = 'hold-slot-label';
+      label.textContent = 'hold';
+      slot.appendChild(label);
+      slot.addEventListener('click', () => Game.retrieveHold(idx));
+      container.appendChild(slot);
+    });
+  },
+
+  renderConsumables() {
+    const container = document.getElementById('consumables');
+    container.innerHTML = '';
+
+    if (SaveData.getTier('bomb') > 0) {
+      const btn = document.createElement('button');
+      btn.className = 'consumable-btn' + (Game.bombMode ? ' active-mode' : '');
+      btn.disabled = Game.bombsLeft <= 0;
+      btn.innerHTML = '💣';
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = Game.bombsLeft;
+      btn.appendChild(badge);
+      btn.addEventListener('click', () => {
+        Game.bombMode = !Game.bombMode;
+        Renderer.renderConsumables();
+      });
+      container.appendChild(btn);
+    }
+
+    if (SaveData.getTier('shuffle') > 0) {
+      const btn = document.createElement('button');
+      btn.className = 'consumable-btn';
+      btn.disabled = Game.shufflesLeft <= 0;
+      btn.innerHTML = '🔀';
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = Game.shufflesLeft;
+      btn.appendChild(badge);
+      btn.addEventListener('click', () => Game.useShuffle());
+      container.appendChild(btn);
+    }
+  },
+
+  clearGhost() {
+    this.boardEl.querySelectorAll('.ghost, .invalid-ghost').forEach(c => {
+      c.classList.remove('ghost', 'invalid-ghost');
+      c.style.setProperty('--piece-color', Board.grid[c.dataset.row]?.[c.dataset.col] || '');
+    });
+  },
+
+  showGhost(cells, row, col, color) {
+    if (!SaveData.hasUpgrade('ghostPreview')) return;
+    this.clearGhost();
+    const valid = Board.canPlace(cells, row, col);
+    cells.forEach(([r, c]) => {
+      const gr = row + r, gc = col + c;
+      if (gr >= 0 && gr < GRID && gc >= 0 && gc < GRID) {
+        const cell = this.boardEl.children[gr * GRID + gc];
+        if (!Board.grid[gr][gc]) {
+          cell.classList.add(valid ? 'ghost' : 'invalid-ghost');
+          cell.style.setProperty('--piece-color', color);
+        }
+      }
+    });
+  },
+
+  async animateClear(rows, cols) {
+    const cellEls = this.boardEl.children;
+    const targets = new Set();
+    rows.forEach(r => { for (let c = 0; c < GRID; c++) targets.add(r * GRID + c); });
+    cols.forEach(c => { for (let r = 0; r < GRID; r++) targets.add(r * GRID + c); });
+
+    targets.forEach(i => cellEls[i].classList.add('clearing'));
+    await new Promise(r => setTimeout(r, 180));
+    targets.forEach(i => { cellEls[i].classList.remove('clearing'); cellEls[i].classList.add('clearing-out'); });
+    await new Promise(r => setTimeout(r, 280));
+    targets.forEach(i => cellEls[i].classList.remove('clearing-out'));
+  },
+
+  showCombo(points, streak, lines) {
+    const wrapper = document.getElementById('board-wrapper');
+    const popup = document.createElement('div');
+    popup.className = 'combo-popup' + (streak >= 3 ? ' fire' : '');
+    popup.textContent = `+${points.toLocaleString()}`;
+    if (streak > 1) popup.textContent += ` x${streak}`;
+    if (lines > 1) popup.textContent += ` (${lines} lines!)`;
+    popup.style.left = '50%';
+    popup.style.top = '40%';
+    popup.style.transform = 'translateX(-50%)';
+    wrapper.appendChild(popup);
+    setTimeout(() => popup.remove(), 850);
+  },
+
+  async showRescue() {
+    const overlay = document.createElement('div');
+    overlay.className = 'rescue-overlay';
+    overlay.innerHTML = '<div class="rescue-text">RESCUED!</div>';
+    document.body.appendChild(overlay);
+    await new Promise(r => setTimeout(r, 700));
+    overlay.remove();
+  },
+
+  showGameOver(data) {
+    document.getElementById('gameover-best').style.display = data.isNewBest ? 'block' : 'none';
+    document.getElementById('gameover-stats').innerHTML = `
+      <span class="label">Score</span><span class="value">${data.score.toLocaleString()}</span>
+      <span class="label">Lines</span><span class="value">${data.lines}</span>
+      <span class="label">Best Streak</span><span class="value">${data.maxStreak}</span>
+      <span class="label">Turns</span><span class="value">${data.turns}</span>
+    `;
+    document.getElementById('star-breakdown').innerHTML = `
+      <h3>⭐ Stars Earned</h3>
+      <div class="star-row"><span>Score</span><span>+${data.starScore}</span></div>
+      <div class="star-row"><span>Lines</span><span>+${data.starLines}</span></div>
+      <div class="star-row"><span>Combo</span><span>+${data.starCombo}</span></div>
+      <div class="star-row"><span>Survival</span><span>+${data.starSurvival}</span></div>
+      <div class="star-row total"><span>Total</span><span>⭐ ${data.totalStars}</span></div>
+    `;
+    App.showScreen('gameover');
+  },
+
+  renderMenu() {
+    document.getElementById('menu-stars').textContent = `⭐ ${SaveData.stars} Stars`;
+    document.getElementById('menu-stats').textContent = `Best: ${SaveData.bestScore.toLocaleString()}  |  Runs: ${SaveData.totalRuns}  |  Lines: ${SaveData.totalLinesCleared}`;
+  },
+
+  renderShop() {
+    document.getElementById('shop-stars').textContent = `⭐ ${SaveData.stars}`;
+    const grid = document.getElementById('shop-grid');
+    grid.innerHTML = '';
+
+    UPGRADES.forEach(upg => {
+      const currentTier = SaveData.getTier(upg.id);
+      const maxed = currentTier >= upg.maxTier;
+      const cost = maxed ? 0 : upg.costs[currentTier];
+      const canAfford = SaveData.stars >= cost;
+      const reqMet = !upg.req || SaveData.hasUpgrade(upg.req);
+      const locked = !reqMet;
+
+      const card = document.createElement('div');
+      card.className = 'upgrade-card' + (maxed ? ' owned' : '') + (locked ? ' locked' : '');
+
+      let tiersHTML = '';
+      if (upg.maxTier > 1) {
+        tiersHTML = '<div class="upgrade-tiers">' +
+          Array.from({ length: upg.maxTier }, (_, i) =>
+            `<div class="tier-dot${i < currentTier ? ' filled' : ''}"></div>`
+          ).join('') + '</div>';
+      }
+
+      let reqHTML = '';
+      if (locked) {
+        const reqUpg = UPGRADES.find(u => u.id === upg.req);
+        reqHTML = `<div class="upgrade-req">Requires: ${reqUpg?.name || upg.req}</div>`;
+      }
+
+      card.innerHTML = `
+        <div style="font-size:1.5rem;min-width:36px;text-align:center;">${upg.icon}</div>
+        <div class="upgrade-info">
+          <div class="upgrade-name">${upg.name}${upg.maxTier > 1 ? ` (${currentTier}/${upg.maxTier})` : ''}</div>
+          <div class="upgrade-desc">${upg.desc}</div>
+          ${tiersHTML}${reqHTML}
+        </div>
+        <div class="upgrade-action">
+          ${maxed ? '<span class="owned-badge">Owned ✓</span>' :
+            locked ? '<span style="font-size:0.75rem;color:#666;">🔒 Locked</span>' :
+            `<button class="btn-buy" ${!canAfford ? 'disabled' : ''}>⭐ ${cost}</button>`
+          }
+        </div>
+      `;
+
+      if (!maxed && !locked) {
+        const btn = card.querySelector('.btn-buy');
+        if (btn && canAfford) {
+          btn.addEventListener('click', () => {
+            SaveData.purchase(upg.id, cost);
+            this.renderShop();
+          });
+        }
+      }
+
+      grid.appendChild(card);
+    });
+  }
+};
+
+// ===== DRAG CONTROLLER =====
+const DragController = {
+  dragging: false,
+  dragPiece: null,
+  dragPieceIdx: -1,
+  dragFromHold: false,
+  floatEl: null,
+  startX: 0, startY: 0, startTime: 0,
+  offsetX: 0, offsetY: 0,
+
+  // Convert screen position (top-left of float) to grid row/col
+  // Accounts for board padding (3px) and cell gap (2px)
+  screenToGrid(screenX, screenY) {
+    const boardRect = Renderer.boardEl.getBoundingClientRect();
+    const padding = 3;
+    const gap = 2;
+    // stride = distance from one cell's left edge to the next cell's left edge
+    const innerWidth = boardRect.width - 2 * padding;
+    const cellW = (innerWidth - (GRID - 1) * gap) / GRID;
+    const stride = cellW + gap;
+    const gridCol = Math.round((screenX - boardRect.left - padding) / stride);
+    const gridRow = Math.round((screenY - boardRect.top - padding) / stride);
+    return { gridRow, gridCol };
+  },
+
+  init() {
+    const tray = document.getElementById('piece-tray');
+    const board = document.getElementById('board');
+    const holdContainer = document.getElementById('hold-slots');
+
+    // Piece tray events
+    tray.addEventListener('mousedown', e => this.onStart(e, false));
+    tray.addEventListener('touchstart', e => this.onStart(e, false), { passive: false });
+
+    // Hold slot drag events
+    holdContainer.addEventListener('mousedown', e => this.onHoldStart(e));
+    holdContainer.addEventListener('touchstart', e => this.onHoldStart(e), { passive: false });
+
+    // Board events (for bomb mode)
+    board.addEventListener('click', async e => {
+      if (Game.bombMode && Game.bombsLeft > 0) {
+        const cell = e.target.closest('.cell');
+        if (cell) {
+          await Game.useBomb(+cell.dataset.row, +cell.dataset.col);
+        }
+      }
+    });
+
+    document.addEventListener('mousemove', e => this.onMove(e));
+    document.addEventListener('touchmove', e => this.onMove(e), { passive: false });
+    document.addEventListener('mouseup', e => this.onEnd(e));
+    document.addEventListener('touchend', e => this.onEnd(e));
+  },
+
+  onHoldStart(e) {
+    // Only start drag from occupied hold slots
+    const slot = e.target.closest('.hold-slot');
+    if (!slot || !slot.classList.contains('occupied')) return;
+
+    const idx = +slot.dataset.holdIdx;
+    const piece = Game.holdSlots[idx];
+    if (!piece) return;
+
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    this.startX = touch.clientX;
+    this.startY = touch.clientY;
+    this.startTime = Date.now();
+    this.dragPiece = piece;
+    this.dragPieceIdx = idx;
+    this.dragFromHold = true;
+    this.dragging = false; // Wait for movement threshold
+    this._pendingHoldDrag = true;
+  },
+
+  onStart(e, fromHold) {
+    const container = e.target.closest('.piece-container');
+    if (!container || container.classList.contains('placed')) return;
+
+    e.preventDefault();
+    const idx = +container.dataset.pieceIdx;
+    const piece = Game.pieces[idx];
+    if (!piece || piece.placed) return;
+
+    const touch = e.touches ? e.touches[0] : e;
+    this.startX = touch.clientX;
+    this.startY = touch.clientY;
+    this.startTime = Date.now();
+    this.dragPiece = piece;
+    this.dragPieceIdx = idx;
+    this.dragFromHold = false;
+    this.dragging = false;
+    this._pendingTrayDrag = true;
+  },
+
+  onMove(e) {
+    const touch = e.touches ? e.touches[0] : e;
+    const dx = touch.clientX - this.startX;
+    const dy = touch.clientY - this.startY;
+
+    const dragThreshold = e.touches ? 20 : 10;
+    if ((this._pendingTrayDrag || this._pendingHoldDrag) && !this.dragging) {
+      if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) {
+        this.dragging = true;
+        this.createFloat(touch.clientX, touch.clientY);
+        if (this._pendingTrayDrag) {
+          const container = document.querySelector(`.piece-container[data-piece-idx="${this.dragPieceIdx}"]`);
+          if (container) container.classList.add('dragging');
+        }
+      } else {
+        return;
+      }
+    }
+
+    if (!this.dragging) return;
+    e.preventDefault();
+
+    // Position float with offset above finger
+    const yOff = e.touches ? -60 : -30;
+    this.floatEl.style.left = (touch.clientX - this.offsetX) + 'px';
+    this.floatEl.style.top = (touch.clientY - this.offsetY + yOff) + 'px';
+
+    // Ghost preview — map float top-left to grid cell
+    const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
+
+    Renderer.clearGhost();
+    if (gridRow >= -2 && gridRow < GRID + 2 && gridCol >= -2 && gridCol < GRID + 2) {
+      Renderer.showGhost(this.dragPiece.cells, gridRow, gridCol, this.dragPiece.color);
+    }
+  },
+
+  async onEnd(e) {
+    const touch = e.changedTouches ? e.changedTouches[0] : e;
+    const elapsed = Date.now() - this.startTime;
+    const dx = touch.clientX - this.startX;
+    const dy = touch.clientY - this.startY;
+    const tapThreshold = e.changedTouches ? 20 : 12;
+    const wasTap = elapsed < 300 && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold;
+
+    if (this._pendingHoldDrag && !this.dragging) {
+      // Tap on hold slot — retrieve
+      if (wasTap) Game.retrieveHold(this.dragPieceIdx);
+      this._pendingHoldDrag = false;
+      return;
+    }
+
+    if (this._pendingTrayDrag && !this.dragging) {
+      if (wasTap) {
+        // Tap on tray piece: rotate if unlocked, or hold
+        if (SaveData.hasUpgrade('rotation')) {
+          Game.rotatePiece(this.dragPieceIdx);
+        } else if (Game.holdSlots.length > 0) {
+          Game.holdPiece(this.dragPieceIdx);
+        }
+      }
+      this._pendingTrayDrag = false;
+      return;
+    }
+
+    if (!this.dragging) {
+      this._pendingTrayDrag = false;
+      this._pendingHoldDrag = false;
+      return;
+    }
+
+    // Try to place
+    const yOff = e.changedTouches ? -60 : -30;
+    const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
+
+    Renderer.clearGhost();
+    this.removeFloat();
+
+    await Game.placePiece(this.dragPieceIdx, gridRow, gridCol, this.dragFromHold);
+
+    // Unmark dragging
+    if (!this.dragFromHold) {
+      const container = document.querySelector(`.piece-container[data-piece-idx="${this.dragPieceIdx}"]`);
+      if (container) container.classList.remove('dragging');
+    }
+
+    this.dragging = false;
+    this._pendingTrayDrag = false;
+    this._pendingHoldDrag = false;
+  },
+
+  createFloat(x, y) {
+    const piece = this.dragPiece;
+    const bounds = PieceFactory.getBounds(piece.cells);
+    // Match the board's actual cell size so float aligns with ghost
+    const boardRect = Renderer.boardEl.getBoundingClientRect();
+    const padding = 3;
+    const gap = 2;
+    const cellSize = (boardRect.width - 2 * padding - (GRID - 1) * gap) / GRID;
+    const stride = cellSize + gap;
+
+    const container = document.createElement('div');
+    container.className = 'drag-float';
+    const grid = document.createElement('div');
+    grid.className = 'piece-grid';
+    grid.style.gridTemplateColumns = `repeat(${bounds.cols}, ${cellSize}px)`;
+    grid.style.gridTemplateRows = `repeat(${bounds.rows}, ${cellSize}px)`;
+    grid.style.setProperty('--piece-color', piece.color);
+    grid.style.gap = gap + 'px';
+
+    const cellSet = new Set(piece.cells.map(([r,c]) => `${r},${c}`));
+    for (let r = 0; r < bounds.rows; r++) {
+      for (let c = 0; c < bounds.cols; c++) {
+        const cell = document.createElement('div');
+        cell.className = cellSet.has(`${r},${c}`) ? 'piece-cell' : 'piece-cell empty';
+        grid.appendChild(cell);
+      }
+    }
+    container.appendChild(grid);
+
+    // Offset from cursor to the piece's top-left corner
+    // Use stride (cell + gap) so the float's grid lines up with the board's grid
+    this.offsetX = (bounds.cols * stride - gap) / 2;
+    this.offsetY = (bounds.rows * stride - gap) / 2;
+
+    document.body.appendChild(container);
+    this.floatEl = container;
+  },
+
+  removeFloat() {
+    if (this.floatEl) {
+      this.floatEl.remove();
+      this.floatEl = null;
+    }
+  }
+};
+
+// ===== LONG PRESS FOR HOLD (when rotation is unlocked, tap = rotate, long press = hold) =====
+// This is handled in DragController.onEnd: tap = rotate, drag = place
+// For hold: double-tap when rotation is unlocked
+// Actually let's simplify: when rotation IS unlocked, first tap rotates.
+// To hold, the user taps the "hold" area / or we add a hold button approach.
+// Better: if rotation unlocked, single tap = rotate. Swipe up on piece = hold.
+// For simplicity: tap = rotate if rotation unlocked, otherwise tap = hold.
+// When both are unlocked: tap = rotate. User retrieves from hold by tapping hold slot.
+// To PUT into hold when rotation is unlocked: we add small hold buttons under each piece.
+
+// ===== APP =====
+const App = {
+  init() {
+    SaveData.load();
+    Renderer.init();
+    DragController.init();
+    this.showScreen('menu');
+  },
+
+  showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    if (name === 'menu') Renderer.renderMenu();
+    if (name === 'shop') Renderer.renderShop();
+  },
+
+  startRun() {
+    this.showScreen('game');
+    Game.start();
+  }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
