@@ -290,25 +290,34 @@ body {
 }
 .hold-slots { display: flex; gap: 6px; }
 .hold-slot {
-  width: 52px;
-  height: 52px;
-  border: 2px dashed #444;
-  border-radius: 8px;
+  width: 58px;
+  height: 58px;
+  border: 2px dashed #555;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.2s;
   position: relative;
+  background: rgba(255,255,255,0.03);
 }
-.hold-slot.occupied { border-style: solid; border-color: #666; }
+.hold-slot:not(.occupied)::after {
+  content: 'DRAG HERE';
+  font-size: 0.45rem;
+  color: #555;
+  letter-spacing: 0.05em;
+  position: absolute;
+}
+.hold-slot.occupied { border-style: solid; border-color: #666; background: rgba(255,255,255,0.05); }
 .hold-slot-label {
   position: absolute;
   bottom: -14px;
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  font-weight: 700;
 }
 .consumables { display: flex; gap: 6px; flex-wrap: wrap; }
 .consumable-btn {
@@ -1720,6 +1729,7 @@ const Game = {
     Renderer.renderBoard();
     Renderer.renderPieces();
     Renderer.renderHUD();
+    Renderer.renderHoldSlots();
 
     // Check tour win
     if (this.tourMode && this.checkTourWin()) {
@@ -1881,6 +1891,13 @@ const Game = {
       this.holdSlots[slotIdx] = this.clonePiece(piece);
       // Mark tray slot as empty placeholder
       this.pieces[pieceIdx] = { id: pieceIdx, name: '', cells: [[0,0]], color: '', placed: true, rotation: 0 };
+    }
+
+    // If all tray pieces are now placed, deal new ones
+    if (this.pieces.every(p => p.placed)) {
+      this.turnsPlayed++;
+      this.pieces = PieceFactory.generate(3);
+      this.tickShards();
     }
 
     Renderer.renderPieces();
@@ -2066,19 +2083,7 @@ const Renderer = {
           container.appendChild(indicator);
         }
 
-        // Show hold button when both rotation and hold are unlocked
-        if (SaveData.hasUpgrade('rotation') && Game.holdSlots.length > 0) {
-          const holdBtn = document.createElement('button');
-          holdBtn.className = 'piece-hold-btn';
-          holdBtn.textContent = 'hold';
-          holdBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            Game.holdPiece(idx);
-          });
-          holdBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-          holdBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-          container.appendChild(holdBtn);
-        }
+        // Hold button removed — hold is now done by dragging piece to the hold box
       }
 
       this.trayEl.appendChild(container);
@@ -2804,12 +2809,8 @@ const DragController = {
     }
 
     if (this._pendingTrayDrag && !this.dragging) {
-      if (wasTap) {
-        if (SaveData.hasUpgrade('rotation')) {
-          Game.rotatePiece(this.dragPieceIdx);
-        } else if (Game.holdSlots.length > 0) {
-          Game.holdPiece(this.dragPieceIdx);
-        }
+      if (wasTap && SaveData.hasUpgrade('rotation')) {
+        Game.rotatePiece(this.dragPieceIdx);
       }
       this._pendingTrayDrag = false;
       return;
@@ -2822,12 +2823,26 @@ const DragController = {
     }
 
     const yOff = e.changedTouches ? -60 : -30;
-    const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
 
     Renderer.clearGhost();
     this.removeFloat();
 
-    await Game.placePiece(this.dragPieceIdx, gridRow, gridCol, this.dragFromHold);
+    // Check if dropped on hold area (drag from tray to hold)
+    let handled = false;
+    if (!this.dragFromHold && Game.holdSlots.length > 0) {
+      const holdContainer = document.getElementById('hold-slots');
+      const holdRect = holdContainer.getBoundingClientRect();
+      if (touch.clientX >= holdRect.left && touch.clientX <= holdRect.right &&
+          touch.clientY >= holdRect.top && touch.clientY <= holdRect.bottom) {
+        Game.holdPiece(this.dragPieceIdx);
+        handled = true;
+      }
+    }
+
+    if (!handled) {
+      const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
+      await Game.placePiece(this.dragPieceIdx, gridRow, gridCol, this.dragFromHold);
+    }
 
     if (!this.dragFromHold) {
       const container = document.querySelector(`.piece-container[data-piece-idx="${this.dragPieceIdx}"]`);
