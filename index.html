@@ -22,6 +22,7 @@
   --color-red: #ff4757;
   --color-pink: #ff6b9d;
   --color-white: #e0e0e0;
+  --tour-star: #00d4ff;
   --board-size: min(85vw, 450px);
   --cell-gap: 2px;
 }
@@ -108,7 +109,22 @@ body {
   color: #111;
   box-shadow: 0 4px 20px var(--accent-glow);
 }
+.btn-tour {
+  background: linear-gradient(135deg, #00c853, #00e676);
+  color: #111;
+  box-shadow: 0 4px 20px rgba(0, 230, 118, 0.3);
+}
+.btn-tourshop {
+  background: linear-gradient(135deg, #00b8d4, #00d4ff);
+  color: #111;
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+}
 .menu-buttons { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.menu-tour-progress {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: -4px;
+}
 
 /* ===== GAME SCREEN ===== */
 #screen-game { padding: 8px; gap: 8px; }
@@ -129,6 +145,48 @@ body {
 .hud-item { display: flex; align-items: center; gap: 3px; }
 .hud-item.inactive { opacity: 0.3; }
 
+/* Tour HUD targets */
+.tour-targets {
+  width: 100%;
+  max-width: var(--board-size);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 4px;
+}
+.tour-targets.active { display: flex; }
+.tour-target-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+.tour-target-label {
+  min-width: 60px;
+  color: var(--text-secondary);
+}
+.tour-target-bar {
+  flex: 1;
+  height: 8px;
+  background: #222;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tour-target-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.tour-target-fill.score-fill { background: linear-gradient(90deg, var(--color-cyan), var(--color-purple)); }
+.tour-target-fill.lines-fill { background: linear-gradient(90deg, var(--color-green), var(--color-cyan)); }
+.tour-target-value {
+  min-width: 70px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+.tour-target-value.met { color: var(--color-green); }
+
 .board-wrapper {
   position: relative;
   width: var(--board-size);
@@ -137,8 +195,6 @@ body {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  grid-template-rows: repeat(10, 1fr);
   gap: var(--cell-gap);
   width: 100%;
   height: 100%;
@@ -178,6 +234,32 @@ body {
 .cell.rescue-glow {
   background: var(--accent) !important;
   box-shadow: 0 0 8px var(--accent);
+}
+
+/* Cell type styles */
+.cell-wall {
+  background: #1a1a1a !important;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px) !important;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.8) !important;
+}
+.cell-stone {
+  background: #555 !important;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.1) !important;
+}
+.cell-ice {
+  background: rgba(100, 200, 255, 0.5) !important;
+  box-shadow: inset 0 0 8px rgba(150, 230, 255, 0.3), inset 0 -2px 4px rgba(0,0,0,0.2) !important;
+}
+.cell-glass {
+  background: rgba(200, 230, 255, 0.4) !important;
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.cell-shard {
+  background: rgba(180, 200, 220, 0.25) !important;
+  background-image: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.15) 1px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.1) 1px, transparent 2px) !important;
+  box-shadow: none !important;
 }
 
 .combo-popup {
@@ -229,7 +311,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
-.consumables { display: flex; gap: 6px; }
+.consumables { display: flex; gap: 6px; flex-wrap: wrap; }
 .consumable-btn {
   width: 44px;
   height: 44px;
@@ -261,9 +343,21 @@ body {
   align-items: center;
   justify-content: center;
 }
+.consumable-btn .size-label {
+  position: absolute;
+  bottom: -2px;
+  right: 1px;
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
 .consumable-btn.active-mode {
   border-color: var(--color-red);
   box-shadow: 0 0 10px rgba(255, 71, 87, 0.4);
+}
+.consumable-btn.active-mode-cleaner {
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
 /* Piece Tray */
@@ -348,7 +442,7 @@ body {
 }
 
 /* ===== SHOP SCREEN ===== */
-#screen-shop {
+#screen-shop, #screen-tourshop {
   gap: 16px;
   padding-bottom: 40px;
   overflow-y: auto;
@@ -364,6 +458,7 @@ body {
 }
 .shop-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
 .shop-stars { color: var(--accent); font-weight: 700; }
+.tour-shop-stars { color: var(--tour-star); font-weight: 700; }
 .shop-grid {
   width: 100%;
   max-width: 500px;
@@ -409,6 +504,19 @@ body {
 }
 .btn-buy:active { transform: scale(0.95); }
 .btn-buy:disabled { background: #444; color: #888; cursor: default; }
+.btn-buy-tour {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--tour-star);
+  color: #111;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.btn-buy-tour:active { transform: scale(0.95); }
+.btn-buy-tour:disabled { background: #444; color: #888; cursor: default; }
 .owned-badge {
   color: var(--color-green);
   font-weight: 700;
@@ -446,12 +554,18 @@ body {
   padding: 16px 24px;
   min-width: 220px;
 }
+.star-breakdown.tour-stars-border {
+  border-color: var(--tour-star);
+}
 .star-breakdown h3 {
   color: var(--accent);
   font-size: 0.9rem;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+.star-breakdown h3.tour-star-heading {
+  color: var(--tour-star);
 }
 .star-row {
   display: flex;
@@ -466,6 +580,9 @@ body {
   font-weight: 900;
   font-size: 1.1rem;
   color: var(--accent);
+}
+.star-row.total.tour-star-total {
+  color: var(--tour-star);
 }
 .new-best { color: var(--color-green); font-weight: 700; font-size: 0.9rem; }
 .gameover-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -499,6 +616,280 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* ===== TOUR MAP SCREEN ===== */
+#screen-tour {
+  gap: 12px;
+  padding-bottom: 40px;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.tour-header {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tour-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tour-title {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #00c853, #00e676);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.tour-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+.tour-progress { color: var(--text-secondary); }
+.tour-star-count { color: var(--tour-star); font-weight: 700; }
+.tour-map-container {
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  aspect-ratio: 1.8;
+  background: #0d1b2a;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #1a2a3e;
+}
+.tour-map-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #0d1b2a;
+}
+.ma-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ma-outline .ma-fill {
+  fill: #132238;
+  stroke: #2a4a6a;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.ma-outline .ma-water {
+  fill: none;
+}
+.tour-route-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.tour-route-line {
+  stroke: #334;
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+  fill: none;
+}
+.tour-route-line.unlocked {
+  stroke: #556;
+  stroke-width: 2;
+}
+.tour-route-line.completed {
+  stroke: var(--color-green);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  opacity: 0.5;
+}
+.tour-town {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.tour-town:hover { transform: translate(-50%, -50%) scale(1.3); }
+.tour-town-locked {
+  background: #333;
+  width: 10px;
+  height: 10px;
+  cursor: default;
+  opacity: 0.5;
+}
+.tour-town-locked:hover { transform: translate(-50%, -50%) scale(1); }
+.tour-town-available {
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.2);
+  animation: townPulse 2s ease-in-out infinite;
+}
+@keyframes townPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.2); }
+  50% { box-shadow: 0 0 12px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.4); }
+}
+.tour-town-completed {
+  background: var(--color-green);
+  box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+}
+.tour-town-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.5rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  pointer-events: none;
+  text-align: center;
+}
+.tour-town-completed .tour-town-label { color: var(--color-green); }
+.tour-town-available .tour-town-label { color: #fff; }
+
+/* Town detail popup */
+.tour-detail {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0,0,0,0.7);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.tour-detail.active { display: flex; }
+.tour-detail-card {
+  background: var(--bg-card);
+  border: 2px solid #333;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+.tour-detail-town {
+  font-size: 1.3rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+.tour-detail-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.tour-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+.tour-detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+.tour-detail-row .label { color: var(--text-secondary); }
+.tour-detail-row .value { font-weight: 700; }
+.tour-detail-best {
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.tour-detail-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Intro overlay */
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.intro-card {
+  background: var(--bg-card);
+  border: 2px solid var(--color-cyan);
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+.intro-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: var(--color-cyan);
+}
+.intro-card p {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* ===== LEVEL COMPLETE SCREEN ===== */
+#screen-levelcomplete {
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.levelcomplete-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-green);
+}
+.levelcomplete-town {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.levelcomplete-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.levelcomplete-stats .label { color: var(--text-secondary); }
+.levelcomplete-stats .value { font-weight: 700; text-align: right; }
+.levelcomplete-reward {
+  background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,140,0,0.15));
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.levelcomplete-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
   .menu-title { font-size: 1.8rem; }
@@ -520,6 +911,9 @@ body {
   <div class="menu-buttons">
     <button class="btn btn-primary" id="btn-continue" onclick="App.continueRun()" style="display:none;">Continue Run</button>
     <button class="btn btn-primary" onclick="App.startRun()">New Run</button>
+    <button class="btn btn-tour" id="btn-tour" onclick="App.showScreen('tour')">World Tour</button>
+    <div class="menu-tour-progress" id="menu-tour-progress"></div>
+    <button class="btn btn-tour" id="btn-continue-tour" onclick="App.continueTourRun()" style="display:none;">Continue Tour</button>
     <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
   </div>
   <div class="menu-stats" id="menu-stats"></div>
@@ -534,7 +928,19 @@ body {
     </div>
     <div class="hud-right">
       <span class="hud-item" id="hud-lives" title="Lives"></span>
-      <button class="pause-btn" onclick="App.showScreen('menu')" title="Menu">&#9776;</button>
+      <button class="pause-btn" onclick="App.pauseToMenu()" title="Menu">&#9776;</button>
+    </div>
+  </div>
+  <div class="tour-targets" id="tour-targets">
+    <div class="tour-target-row" id="tour-target-score" style="display:none;">
+      <span class="tour-target-label">Score</span>
+      <div class="tour-target-bar"><div class="tour-target-fill score-fill" id="tour-score-fill"></div></div>
+      <span class="tour-target-value" id="tour-score-value"></span>
+    </div>
+    <div class="tour-target-row" id="tour-target-lines" style="display:none;">
+      <span class="tour-target-label">Lines</span>
+      <div class="tour-target-bar"><div class="tour-target-fill lines-fill" id="tour-lines-fill"></div></div>
+      <span class="tour-target-value" id="tour-lines-value"></span>
     </div>
   </div>
   <div class="board-wrapper" id="board-wrapper">
@@ -559,22 +965,76 @@ body {
   <div class="shop-grid" id="shop-grid"></div>
 </div>
 
+<!-- TOUR SHOP -->
+<div id="screen-tourshop" class="screen">
+  <div class="shop-header">
+    <div>
+      <button class="btn btn-secondary" onclick="App.showScreen('tour')" style="padding:8px 16px;font-size:0.85rem;">&larr; Back</button>
+      <span class="shop-title" style="margin-left:12px;color:var(--tour-star);">Tour Shop</span>
+    </div>
+    <div class="tour-shop-stars" id="tourshop-stars"></div>
+  </div>
+  <div class="shop-grid" id="tourshop-grid"></div>
+</div>
+
 <!-- GAME OVER -->
 <div id="screen-gameover" class="screen">
-  <div class="gameover-title">Run Over</div>
+  <div class="gameover-title" id="gameover-title">Run Over</div>
   <div id="gameover-best" class="new-best" style="display:none;">New Best Score!</div>
   <div class="gameover-stats" id="gameover-stats"></div>
   <div class="star-breakdown" id="star-breakdown"></div>
-  <div class="gameover-buttons">
+  <div id="gameover-tour-warning" style="display:none;color:var(--color-red);font-size:0.85rem;font-weight:700;margin-top:8px;"></div>
+  <div class="gameover-buttons" id="gameover-buttons">
     <button class="btn btn-primary" onclick="App.startRun()">Play Again</button>
     <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
     <button class="btn btn-secondary" onclick="App.showScreen('menu')">Menu</button>
   </div>
 </div>
 
+<!-- TOUR MAP -->
+<div id="screen-tour" class="screen">
+  <div class="tour-header">
+    <div class="tour-header-left">
+      <button class="btn btn-secondary" onclick="App.showScreen('menu')" style="padding:8px 16px;font-size:0.85rem;">&larr; Back</button>
+      <span class="tour-title">World Tour</span>
+      <button class="btn btn-tourshop" onclick="App.showScreen('tourshop')" style="padding:6px 14px;font-size:0.75rem;">Tour Shop</button>
+    </div>
+    <div class="tour-header-right">
+      <span class="tour-progress" id="tour-progress"></span>
+      <span class="tour-star-count" id="tour-star-count"></span>
+    </div>
+  </div>
+  <div class="tour-map-container">
+    <div class="tour-map-inner" id="tour-map-inner">
+      <!-- Massachusetts outline SVG -->
+      <svg class="ma-outline" viewBox="0 0 1000 556" preserveAspectRatio="xMidYMid meet">
+        <path class="ma-fill" d="M 91.7,65.1 L 304.6,71.9 430.5,76.7 521.6,79.7 602.4,82.4 618.9,72.2 628.0,65.2 634.6,66.0 640.5,49.1 645.9,42.7 672.6,43.6 677.9,28.5 703.0,18.7 708.7,15.4 715.2,15.0 732.5,22.7 737.8,20.1 744.3,64.7 748.0,82.0 755.9,87.2 761.2,94.3 773.6,94.8 787.2,84.0 788.9,93.7 796.4,95.6 796.7,104.6 785.8,116.9 777.2,123.5 776.6,119.8 774.4,119.0 769.1,125.1 753.7,127.6 736.2,134.3 723.3,137.3 727.3,145.0 732.9,156.0 727.1,156.1 719.1,164.4 713.8,164.4 706.7,167.6 708.5,177.2 715.5,181.0 704.6,175.3 700.0,171.8 692.8,182.3 693.5,187.5 696.8,191.8 696.8,193.6 701.9,206.2 696.2,204.0 687.8,207.1 689.3,223.0 690.6,234.1 701.1,234.2 703.1,233.6 709.4,236.9 712.6,234.6 717.1,226.5 711.4,221.8 720.9,223.6 728.9,235.1 745.4,240.3 754.4,249.2 762.9,256.6 767.1,272.6 784.6,299.1 782.4,306.3 794.5,329.9 784.8,332.8 787.3,330.1 781.7,314.2 777.3,326.3 772.3,326.1 766.1,330.8 781.5,345.4 789.0,350.9 795.7,349.2 809.3,360.3 813.1,370.0 810.5,390.7 812.9,400.2 829.1,415.5 876.7,425.2 884.0,432.4 896.5,422.2 916.2,416.1 936.6,411.5 952.5,398.8 953.5,370.9 947.1,366.7 941.7,355.6 936.2,366.4 936.1,374.4 934.3,366.3 931.4,326.4 925.0,315.1 912.5,308.4 904.2,312.7 902.6,320.8 909.5,318.3 904.3,323.6 898.6,319.7 890.5,309.1 890.7,304.7 903.6,301.3 931.7,311.2 950.4,334.3 968.0,385.8 972.5,440.4 966.4,458.5 958.1,479.5 952.5,493.7 949.2,490.6 953.1,486.6 960.7,458.5 954.5,449.1 945.8,448.9 916.4,455.1 888.6,462.9 885.0,469.2 882.4,466.7 879.3,460.6 866.5,460.8 858.4,462.0 855.9,467.4 845.7,470.5 831.8,483.1 823.3,490.1 792.2,493.4 780.9,501.9 767.4,509.9 753.9,520.8 737.8,528.1 724.7,536.3 706.1,540.1 702.8,538.8 711.0,535.3 720.4,532.8 741.8,522.6 754.5,511.4 780.8,490.9 782.3,483.8 784.1,479.1 784.6,464.3 781.9,457.3 784.9,452.3 783.5,447.1 778.9,444.0 788.9,434.8 781.7,431.9 766.6,426.4 761.1,429.1 763.6,442.8 754.2,439.5 753.4,451.3 750.5,458.4 748.5,455.0 738.2,454.3 742.3,461.8 733.1,464.3 727.8,464.5 727.3,477.4 724.0,463.9 712.5,466.2 715.6,475.7 710.7,469.2 708.1,472.9 706.0,481.1 703.1,480.5 707.7,494.4 694.2,505.1 680.2,509.0 657.8,509.6 654.8,475.2 652.4,470.4 653.8,463.0 654.6,452.2 653.9,451.5 643.1,448.8 641.7,447.3 638.3,446.4 634.6,440.8 620.6,418.8 602.6,408.1 601.4,403.8 599.6,402.5 600.0,399.5 597.9,393.6 600.5,389.9 599.3,385.9 600.0,368.6 596.5,367.4 593.3,367.9 590.9,368.3 588.8,358.2 588.9,342.5 557.4,324.6 541.9,325.5 478.6,327.8 429.0,321.1 359.7,319.4 286.2,318.4 269.8,321.9 255.8,319.1 225.6,318.8 226.6,321.6 224.9,322.9 224.6,324.2 224.1,326.1 223.2,329.6 202.0,317.5 161.8,316.9 100.7,314.7 47.4,312.6 27.5,299.9 91.7,65.1 Z"/>
+      </svg>
+      <svg class="tour-route-svg" id="tour-route-svg"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- TOUR DETAIL POPUP -->
+<div class="tour-detail" id="tour-detail">
+  <div class="tour-detail-card" id="tour-detail-card"></div>
+</div>
+
+<!-- LEVEL COMPLETE -->
+<div id="screen-levelcomplete" class="screen">
+  <div class="levelcomplete-title">Town Conquered!</div>
+  <div class="levelcomplete-town" id="lc-town"></div>
+  <div class="levelcomplete-stats" id="lc-stats"></div>
+  <div class="star-breakdown" id="lc-star-breakdown"></div>
+  <div class="levelcomplete-reward" id="lc-reward" style="display:none;"></div>
+  <div class="levelcomplete-buttons" id="lc-buttons">
+    <button class="btn btn-tour" onclick="App.showScreen('tour')">Next Town</button>
+    <button class="btn btn-secondary" onclick="App.showScreen('tour')">Back to Map</button>
+  </div>
+</div>
+
 <script>
 // ===== CONSTANTS =====
-const GRID = 10;
 
 const COLORS = {
   '1x1': 'var(--color-white)', '1x2': 'var(--color-cyan)', '2x1': 'var(--color-cyan)',
@@ -619,18 +1079,92 @@ const SHAPES = [
 ];
 
 const UPGRADES = [
-  { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it (small/medium only). Tap held piece to retrieve.', maxTier: 1, costs: [100], icon: '📦', req: null },
-  { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90° clockwise before placing.', maxTier: 1, costs: [150], icon: '🔄', req: null },
-  { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [100, 225, 400], icon: '🍀', req: null },
-  { id: 'shuffle', name: 'Shuffle', desc: 'Re-roll all current tray pieces. Limited uses per run.', maxTier: 3, costs: [120, 200, 350], icon: '🔀', req: null },
-  { id: 'scoreMult', name: 'Score Multiplier', desc: 'Permanent bonus to all score earned (+10% per tier).', maxTier: 4, costs: [130, 275, 475, 800], icon: '✖️', req: null },
-  { id: 'streakShield', name: 'Streak Shield', desc: 'Your combo streak doesn\'t reset for missed turns.', maxTier: 2, costs: [175, 375], icon: '🛡️', req: null },
-  { id: 'bomb', name: 'Bomb', desc: 'Clears a 3×3 area. Tap the board to detonate. Limited per run.', maxTier: 3, costs: [160, 300, 525], icon: '💣', req: null },
-  { id: 'life1', name: 'Extra Life', desc: 'When stuck, rescue clears the most-filled rows & columns.', maxTier: 1, costs: [250], icon: '❤️', req: null },
-  { id: 'hold2', name: 'Hold Slot 2', desc: 'A second hold slot for even more flexibility.', maxTier: 1, costs: [300], icon: '📦', req: 'hold1' },
-  { id: 'life2', name: 'Extra Life 2', desc: 'A second rescue charge per run.', maxTier: 1, costs: [600], icon: '❤️', req: 'life1' },
-  { id: 'life3', name: 'Extra Life 3', desc: 'A third rescue charge per run.', maxTier: 1, costs: [1200], icon: '❤️', req: 'life2' },
+  { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it (small/medium only). Tap held piece to retrieve.', maxTier: 1, costs: [100], icon: '\uD83D\uDCE6', req: null },
+  { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90\u00B0 clockwise before placing.', maxTier: 1, costs: [150], icon: '\uD83D\uDD04', req: null },
+  { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [100, 225, 400], icon: '\uD83C\uDF40', req: null },
+  { id: 'shuffle', name: 'Shuffle', desc: 'Re-roll all current tray pieces. Limited uses per run.', maxTier: 3, costs: [120, 200, 350], icon: '\uD83D\uDD00', req: null },
+  { id: 'scoreMult', name: 'Score Multiplier', desc: 'Permanent bonus to all score earned (+10% per tier).', maxTier: 4, costs: [130, 275, 475, 800], icon: '\u2716\uFE0F', req: null },
+  { id: 'streakShield', name: 'Streak Shield', desc: 'Your combo streak doesn\'t reset for missed turns.', maxTier: 2, costs: [175, 375], icon: '\uD83D\uDEE1\uFE0F', req: null },
+  { id: 'bomb', name: 'Bomb', desc: 'Clears a 3x3 area. Tap the board to detonate. Limited per run.', maxTier: 3, costs: [160, 300, 525], icon: '\uD83D\uDCA3', req: null },
+  { id: 'life1', name: 'Extra Life', desc: 'When stuck, rescue clears the most-filled rows & columns.', maxTier: 1, costs: [250], icon: '\u2764\uFE0F', req: null },
+  { id: 'hold2', name: 'Hold Slot 2', desc: 'A second hold slot for even more flexibility.', maxTier: 1, costs: [300], icon: '\uD83D\uDCE6', req: 'hold1' },
+  { id: 'life2', name: 'Extra Life 2', desc: 'A second rescue charge per run.', maxTier: 1, costs: [600], icon: '\u2764\uFE0F', req: 'life1' },
+  { id: 'life3', name: 'Extra Life 3', desc: 'A third rescue charge per run.', maxTier: 1, costs: [1200], icon: '\u2764\uFE0F', req: 'life2' },
 ];
+
+const TOUR_SHOP_ITEMS = [
+  { id: 'tourBombs', name: 'Bomb x1', desc: 'One bomb for tour levels.', cost: 15, qty: 1, icon: '\uD83D\uDCA3' },
+  { id: 'tourBombs', name: 'Bomb x3', desc: 'Three bombs for tour levels.', cost: 40, qty: 3, icon: '\uD83D\uDCA3' },
+  { id: 'tourShuffles', name: 'Shuffle x1', desc: 'One shuffle for tour levels.', cost: 10, qty: 1, icon: '\uD83D\uDD00' },
+  { id: 'tourShuffles', name: 'Shuffle x3', desc: 'Three shuffles for tour levels.', cost: 25, qty: 3, icon: '\uD83D\uDD00' },
+  { id: 'cleaners1x1', name: 'Cleaner 1x1 x1', desc: 'Converts 1 special cell to normal.', cost: 8, qty: 1, icon: '\uD83E\uDDF9' },
+  { id: 'cleaners1x1', name: 'Cleaner 1x1 x3', desc: 'Three 1x1 cleaners.', cost: 20, qty: 3, icon: '\uD83E\uDDF9' },
+  { id: 'cleaners2x2', name: 'Cleaner 2x2 x1', desc: 'Converts special cells in a 2x2 area.', cost: 20, qty: 1, icon: '\uD83E\uDDF9' },
+  { id: 'cleaners3x3', name: 'Cleaner 3x3 x1', desc: 'Converts special cells in a 3x3 area.', cost: 40, qty: 1, icon: '\uD83E\uDDF9' },
+  { id: 'tourLives', name: 'Extra Life x1', desc: 'One extra life for tour levels.', cost: 50, qty: 1, icon: '\u2764\uFE0F' },
+];
+
+const WORLD_TOUR = [
+  // Main path: Newburyport to Boston (0-7)
+  { id:0, town:'Newburyport', grid:8, unlock:0, scoreTarget:5000, linesTarget:0, next:[1], pos:[72,7], desc:'A quiet coastal start' },
+  { id:1, town:'Rockport', grid:8, unlock:0, scoreTarget:0, linesTarget:80, next:[2], pos:[79,17], desc:'Artists\' colony on Cape Ann' },
+  { id:2, town:'Gloucester', grid:8, unlock:5, scoreTarget:10000, linesTarget:0, next:[3], pos:[78,20], desc:'America\'s oldest seaport',
+    pre:[[1,1],[1,2],[2,1],[2,2],[5,5],[5,6]], intro:'Some blocks are already here! Clear them like normal.' },
+  { id:3, town:'Salem', grid:8, unlock:8, scoreTarget:0, linesTarget:120, next:[4], pos:[72,26], desc:'Witch City',
+    pre:[[0,3],[0,4],[1,3],[1,4],[3,0],[3,7],[4,0],[4,7],[6,3],[6,4]] },
+  { id:4, town:'Marblehead', grid:8, unlock:12, scoreTarget:15000, linesTarget:100, next:[5], pos:[73,27], desc:'Birthplace of the American Navy',
+    pre:[[2,2],[2,5],[5,2],[5,5]], stones:[[3,3],[3,4]], intro:'Stone blocks can\'t be cleared by lines \u2014 only bombs can break them!' },
+  { id:5, town:'Lynn', grid:9, unlock:18, scoreTarget:0, linesTarget:150, next:[6], pos:[70,30], desc:'City of Sin, never again',
+    pre:[[4,4]], intro:'The grid has grown! More space, more challenge.' },
+  { id:6, town:'Revere', grid:9, unlock:25, scoreTarget:25000, linesTarget:0, next:[7], pos:[69,33], desc:'Home of the famous beach',
+    ice:[[1,1],[1,7],[7,1],[7,7]], intro:'Ice blocks need TWO line clears to break. First crack, then shatter!' },
+  { id:7, town:'Boston', grid:9, unlock:35, scoreTarget:30000, linesTarget:180, next:[8,14], pos:[67,36], desc:'The Hub of the Universe',
+    pre:[[0,0],[0,8],[8,0],[8,8]], stones:[[4,4]], ice:[[2,4],[4,2],[4,6],[6,4]] },
+  // Cape Branch (8-13)
+  { id:8, town:'Quincy', grid:9, unlock:45, scoreTarget:0, linesTarget:220, next:[9], pos:[69,43], desc:'City of Presidents',
+    walls:[[0,0],[0,1],[1,0],[0,7],[0,8],[1,8],[7,0],[8,0],[8,1],[7,8],[8,7],[8,8]], intro:'Walled cells block your path \u2014 plan around them!' },
+  { id:9, town:'Plymouth', grid:9, unlock:55, scoreTarget:40000, linesTarget:0, next:[10], pos:[78,62], desc:'Where it all began',
+    walls:[[0,0],[0,1],[0,2],[1,0],[2,0],[6,8],[7,8],[8,6],[8,7],[8,8]], pre:[[3,3],[3,4],[3,5],[4,3],[4,5],[5,3],[5,4],[5,5]] },
+  { id:10, town:'Sandwich', grid:10, unlock:70, scoreTarget:50000, linesTarget:0, next:[11], pos:[82,75], desc:'Oldest town on the Cape',
+    ice:[[2,2],[2,7],[7,2],[7,7],[4,4],[4,5],[5,4],[5,5]], stones:[[0,0],[0,9],[9,0],[9,9]] },
+  { id:11, town:'Hyannis', grid:10, unlock:75, scoreTarget:45000, linesTarget:150, next:[12], pos:[87,80], desc:'Kennedy country',
+    glass:[[1,3],[2,4],[3,5],[4,6],[5,5],[6,4]], intro:'Glass blocks shatter when cleared, leaving shards that block cells for 2 turns!' },
+  { id:12, town:'Chatham', grid:10, unlock:90, scoreTarget:52000, linesTarget:0, next:[13], pos:[93,78], desc:'Where the Atlantic meets the Cape',
+    glass:[[2,2],[2,7],[7,2],[7,7]], ice:[[3,3],[3,6],[6,3],[6,6]], pre:[[4,4],[4,5],[5,4],[5,5]] },
+  { id:13, town:'Provincetown', grid:10, unlock:85, scoreTarget:55000, linesTarget:200, next:[], pos:[90,56], desc:'End of the Cape',
+    pre:[[0,3],[0,4],[0,5],[0,6],[1,2],[1,7],[2,1],[2,8],[3,0],[3,9]], ice:[[4,4],[4,5],[5,4],[5,5]], stones:[[4,0],[4,9],[5,0],[5,9]],
+    glass:[[6,3],[6,4],[6,5],[6,6]], reward:'bonusLife' },
+  // Western Branch (14-15): Boston -> Framingham -> Worcester
+  { id:14, town:'Framingham', grid:10, unlock:50, scoreTarget:0, linesTarget:300, next:[15], pos:[58,42], desc:'Gateway to MetroWest',
+    walls:[[0,3],[0,4],[0,5],[0,6],[9,3],[9,4],[9,5],[9,6]], pre:[[4,0],[4,9],[5,0],[5,9]] },
+  { id:15, town:'Worcester', grid:10, unlock:70, scoreTarget:70000, linesTarget:0, next:[16,19], pos:[48,43], desc:'Heart of the Commonwealth',
+    pre:[[2,2],[2,7],[7,2],[7,7]], stones:[[4,4],[5,5]], ice:[[3,3],[3,6],[6,3],[6,6]] },
+  // Northern arm from Worcester (16-18)
+  { id:16, town:'Lowell', grid:10, unlock:90, scoreTarget:0, linesTarget:350, next:[17], pos:[61,19], desc:'Cradle of the Industrial Revolution',
+    ice:[[1,1],[1,3],[1,5],[1,7],[3,1],[3,3],[3,5],[3,7],[5,1],[5,3],[5,5],[5,7]] },
+  { id:17, town:'Concord', grid:10, unlock:110, scoreTarget:80000, linesTarget:250, next:[18], pos:[60,30], desc:'Shot heard round the world',
+    stones:[[2,2],[2,3],[2,6],[2,7],[3,2],[3,7],[6,2],[6,7],[7,2],[7,3],[7,6],[7,7]], pre:[[4,4],[4,5],[5,4],[5,5]] },
+  { id:18, town:'Leominster', grid:10, unlock:120, scoreTarget:85000, linesTarget:200, next:[], pos:[47,28], desc:'Plastics capital of the world',
+    pre:[[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[8,1],[8,2],[8,3],[8,4],[8,5],[8,6],[8,7],[8,8],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9]],
+    stones:[[5,3],[5,6],[6,3],[6,4],[6,5],[6,6]],
+    ice:[[3,4],[3,5],[4,3],[4,4],[4,5],[4,6]],
+    reward:'bonusLife' },
+  // Western continues from Worcester (19-22)
+  { id:19, town:'Springfield', grid:10, unlock:140, scoreTarget:100000, linesTarget:0, next:[20], pos:[27,53], desc:'Basketball was invented here',
+    walls:[[0,0],[0,9],[9,0],[9,9],[0,1],[1,0],[0,8],[1,9],[8,0],[9,1],[8,9],[9,8]], stones:[[3,3],[3,6],[6,3],[6,6]], ice:[[4,4],[4,5],[5,4],[5,5]] },
+  { id:20, town:'Northampton', grid:10, unlock:175, scoreTarget:0, linesTarget:400, next:[21], pos:[25,39], desc:'Paradise City',
+    pre:[[0,0],[0,1],[0,2],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9]], ice:[[3,3],[3,6],[6,3],[6,6]], stones:[[4,4],[5,5]] },
+  { id:21, town:'Amherst', grid:10, unlock:210, scoreTarget:100000, linesTarget:300, next:[22], pos:[29,36], desc:'Five College country',
+    walls:[[4,0],[5,0],[4,9],[5,9]], stones:[[2,2],[2,7],[7,2],[7,7]], ice:[[3,4],[3,5],[6,4],[6,5]], pre:[[0,4],[0,5],[9,4],[9,5]] },
+  { id:22, town:'Pittsfield', grid:10, unlock:300, scoreTarget:120000, linesTarget:350, next:[], pos:[10,31], desc:'Gateway to the Berkshires',
+    walls:[[0,0],[0,1],[1,0],[0,8],[0,9],[1,9],[8,0],[9,0],[9,1],[8,9],[9,8],[9,9]],
+    stones:[[3,3],[3,4],[3,5],[3,6],[6,3],[6,4],[6,5],[6,6]], ice:[[2,4],[2,5],[7,4],[7,5],[4,2],[5,2],[4,7],[5,7]],
+    pre:[[4,4],[4,5],[5,4],[5,5]] },
+];
+
+// Build a lookup map by id for fast access
+const WORLD_TOUR_BY_ID = {};
+WORLD_TOUR.forEach((level, idx) => { WORLD_TOUR_BY_ID[level.id] = level; });
 
 // ===== SAVE DATA =====
 const SaveData = {
@@ -650,6 +1184,72 @@ const SaveData = {
   purchase(id, cost) {
     this.stars -= cost;
     this.upgrades[id] = (this.upgrades[id] || 0) + 1;
+    this.save();
+  }
+};
+
+// ===== TOUR SAVE =====
+const TourSave = {
+  unlocked: [0, 1],
+  completed: [],
+  bestScores: {},
+  seenIntros: [],
+  bonusLives: 0,
+  stars: 0,
+  tourBombs: 0,
+  tourShuffles: 0,
+  tourLives: 0,
+  cleaners1x1: 0,
+  cleaners2x2: 0,
+  cleaners3x3: 0,
+
+  load() {
+    try {
+      const d = JSON.parse(localStorage.getItem('blocktrek_tour'));
+      if (d) {
+        this.unlocked = d.unlocked || [0, 1];
+        this.completed = d.completed || [];
+        this.bestScores = d.bestScores || {};
+        this.seenIntros = d.seenIntros || [];
+        this.bonusLives = d.bonusLives || 0;
+        this.stars = d.stars || 0;
+        this.tourBombs = d.tourBombs || 0;
+        this.tourShuffles = d.tourShuffles || 0;
+        this.tourLives = d.tourLives || 0;
+        this.cleaners1x1 = d.cleaners1x1 || 0;
+        this.cleaners2x2 = d.cleaners2x2 || 0;
+        this.cleaners3x3 = d.cleaners3x3 || 0;
+      }
+    } catch(e) {}
+  },
+  save() {
+    localStorage.setItem('blocktrek_tour', JSON.stringify({
+      unlocked: this.unlocked, completed: this.completed,
+      bestScores: this.bestScores, seenIntros: this.seenIntros,
+      bonusLives: this.bonusLives, stars: this.stars,
+      tourBombs: this.tourBombs, tourShuffles: this.tourShuffles,
+      tourLives: this.tourLives,
+      cleaners1x1: this.cleaners1x1, cleaners2x2: this.cleaners2x2,
+      cleaners3x3: this.cleaners3x3
+    }));
+  },
+  isUnlocked(id) { return this.unlocked.includes(id); },
+  isCompleted(id) { return this.completed.includes(id); },
+  complete(id) { if (!this.completed.includes(id)) this.completed.push(id); this.save(); },
+  unlock(id) { if (!this.unlocked.includes(id)) this.unlocked.push(id); this.save(); },
+  fullReset() {
+    this.stars = 0;
+    this.unlocked = [0, 1];
+    this.completed = [];
+    this.bestScores = {};
+    this.seenIntros = [];
+    this.bonusLives = 0;
+    this.tourBombs = 0;
+    this.tourShuffles = 0;
+    this.tourLives = 0;
+    this.cleaners1x1 = 0;
+    this.cleaners2x2 = 0;
+    this.cleaners3x3 = 0;
     this.save();
   }
 };
@@ -694,22 +1294,67 @@ const PieceFactory = {
 // ===== BOARD =====
 const Board = {
   grid: [],
+  size: 10,
 
-  init() {
-    this.grid = Array.from({ length: GRID }, () => Array(GRID).fill(null));
+  init(size, levelData) {
+    this.size = size || 10;
+    this.grid = Array.from({ length: this.size }, () => Array(this.size).fill(null));
+
+    if (levelData) {
+      // Pre-placed normal blocks
+      if (levelData.pre) {
+        levelData.pre.forEach(([r, c]) => {
+          if (r < this.size && c < this.size) {
+            this.grid[r][c] = { color: 'var(--color-purple)', type: 'normal' };
+          }
+        });
+      }
+      // Stones
+      if (levelData.stones) {
+        levelData.stones.forEach(([r, c]) => {
+          if (r < this.size && c < this.size) {
+            this.grid[r][c] = { color: '#555', type: 'stone' };
+          }
+        });
+      }
+      // Ice
+      if (levelData.ice) {
+        levelData.ice.forEach(([r, c]) => {
+          if (r < this.size && c < this.size) {
+            this.grid[r][c] = { color: 'rgba(100,200,255,0.5)', type: 'ice' };
+          }
+        });
+      }
+      // Glass
+      if (levelData.glass) {
+        levelData.glass.forEach(([r, c]) => {
+          if (r < this.size && c < this.size) {
+            this.grid[r][c] = { color: 'rgba(200,230,255,0.4)', type: 'glass' };
+          }
+        });
+      }
+      // Walls
+      if (levelData.walls) {
+        levelData.walls.forEach(([r, c]) => {
+          if (r < this.size && c < this.size) {
+            this.grid[r][c] = { color: '#1a1a1a', type: 'wall' };
+          }
+        });
+      }
+    }
   },
 
   canPlace(cells, row, col) {
     return cells.every(([r, c]) => {
       const gr = row + r, gc = col + c;
-      return gr >= 0 && gr < GRID && gc >= 0 && gc < GRID && !this.grid[gr][gc];
+      return gr >= 0 && gr < this.size && gc >= 0 && gc < this.size && !this.grid[gr][gc];
     });
   },
 
   place(cells, row, col, color) {
     const placed = [];
     cells.forEach(([r, c]) => {
-      this.grid[row + r][col + c] = color;
+      this.grid[row + r][col + c] = { color: color, type: 'normal' };
       placed.push([row + r, col + c]);
     });
     return placed;
@@ -717,25 +1362,53 @@ const Board = {
 
   checkClears() {
     const rows = [], cols = [];
-    for (let i = 0; i < GRID; i++) {
-      if (this.grid[i].every(c => c !== null)) rows.push(i);
-      if (this.grid.every(r => r[i] !== null)) cols.push(i);
+    for (let i = 0; i < this.size; i++) {
+      // A row is full if every cell is non-null, not wall, not stone, and not shard
+      if (this.grid[i].every(c => c !== null && c.type !== 'wall' && c.type !== 'stone' && c.type !== 'shard')) rows.push(i);
+      let colFull = true;
+      for (let r = 0; r < this.size; r++) {
+        const c = this.grid[r][i];
+        if (c === null || c.type === 'wall' || c.type === 'stone' || c.type === 'shard') { colFull = false; break; }
+      }
+      if (colFull) cols.push(i);
     }
     return { rows, cols };
   },
 
   clearLines(rows, cols) {
     const cleared = new Set();
-    rows.forEach(r => { for (let c = 0; c < GRID; c++) { cleared.add(`${r},${c}`); this.grid[r][c] = null; } });
-    cols.forEach(c => { for (let r = 0; r < GRID; r++) { cleared.add(`${r},${c}`); this.grid[r][c] = null; } });
+    const toClear = new Set();
+    rows.forEach(r => { for (let c = 0; c < this.size; c++) toClear.add(`${r},${c}`); });
+    cols.forEach(c => { for (let r = 0; r < this.size; r++) toClear.add(`${r},${c}`); });
+
+    toClear.forEach(key => {
+      const [r, c] = key.split(',').map(Number);
+      const cell = this.grid[r][c];
+      if (!cell) { cleared.add(key); return; }
+      if (cell.type === 'wall' || cell.type === 'stone' || cell.type === 'shard') {
+        // Walls, stones, and shards are not cleared by lines
+        return;
+      }
+      if (cell.type === 'ice') {
+        // Ice converts to normal instead of being cleared
+        this.grid[r][c] = { color: cell.color, type: 'normal' };
+      } else if (cell.type === 'glass') {
+        // Glass becomes shard with turnsLeft counter
+        this.grid[r][c] = { color: cell.color, type: 'shard', turnsLeft: 2 };
+      } else {
+        this.grid[r][c] = null;
+      }
+      cleared.add(key);
+    });
+
     return cleared;
   },
 
   canAnyFit(pieces) {
     for (const p of pieces) {
       if (!p || p.placed) continue;
-      for (let r = 0; r < GRID; r++) {
-        for (let c = 0; c < GRID; c++) {
+      for (let r = 0; r < this.size; r++) {
+        for (let c = 0; c < this.size; c++) {
           if (this.canPlace(p.cells, r, c)) return true;
         }
       }
@@ -744,8 +1417,8 @@ const Board = {
   },
 
   getMostFilledRowsCols(n) {
-    const rowFill = this.grid.map((row, i) => ({ idx: i, count: row.filter(c => c !== null).length }));
-    const colFill = Array.from({ length: GRID }, (_, i) => ({ idx: i, count: this.grid.filter(r => r[i] !== null).length }));
+    const rowFill = this.grid.map((row, i) => ({ idx: i, count: row.filter(c => c !== null && c.type !== 'wall').length }));
+    const colFill = Array.from({ length: this.size }, (_, i) => ({ idx: i, count: this.grid.filter(r => r[i] !== null && r[i].type !== 'wall').length }));
     rowFill.sort((a, b) => b.count - a.count);
     colFill.sort((a, b) => b.count - a.count);
     return {
@@ -759,37 +1432,91 @@ const Board = {
 const Game = {
   score: 0, streak: 0, maxStreak: 0, linesCleared: 0, turnsPlayed: 0,
   pieces: [], holdSlots: [], livesLeft: 0, bombsLeft: 0, shufflesLeft: 0,
-  shieldTurns: 0, bombMode: false, running: false,
+  shieldTurns: 0, bombMode: false, cleanerMode: null, running: false,
+  tourMode: false, tourLevel: null,
 
   start() {
-    Board.init();
-    this.score = 0; this.streak = 0; this.maxStreak = 0;
-    this.linesCleared = 0; this.turnsPlayed = 0;
-    this.bombMode = false;
-
-    // Init from upgrades
-    const holdCount = SaveData.getTier('hold1') + SaveData.getTier('hold2');
-    this.holdSlots = Array(holdCount).fill(null);
-    this.livesLeft = SaveData.getTier('life1') + SaveData.getTier('life2') + SaveData.getTier('life3');
-    this.bombsLeft = SaveData.getTier('bomb');
-    this.shufflesLeft = SaveData.getTier('shuffle');
-    this.shieldTurns = 0;
-
+    this.tourMode = false;
+    this.tourLevel = null;
+    Board.init(10);
+    this._initCommon();
     this.pieces = PieceFactory.generate(3);
     this.running = true;
     this.saveRun();
+    Renderer.init(Board.size);
     Renderer.renderAll();
+  },
+
+  startTourLevel(levelIdx) {
+    const level = WORLD_TOUR_BY_ID[levelIdx] || WORLD_TOUR.find(l => l.id === levelIdx);
+    this.tourMode = true;
+    this.tourLevel = level;
+    Board.init(level.grid, level);
+    this._initCommon();
+    this.pieces = PieceFactory.generate(3);
+    this.running = true;
+    this.saveRun();
+    Renderer.init(Board.size);
+    Renderer.renderAll();
+
+    // Show intro if applicable
+    if (level.intro && !TourSave.seenIntros.includes(level.id)) {
+      this._showIntro(level);
+    }
+  },
+
+  _initCommon() {
+    this.score = 0; this.streak = 0; this.maxStreak = 0;
+    this.linesCleared = 0; this.turnsPlayed = 0;
+    this.bombMode = false;
+    this.cleanerMode = null;
+
+    const holdCount = SaveData.getTier('hold1') + SaveData.getTier('hold2');
+    this.holdSlots = Array(holdCount).fill(null);
+
+    if (this.tourMode) {
+      // Tour mode: consumables come from TourSave
+      this.livesLeft = TourSave.tourLives + TourSave.bonusLives;
+      this.bombsLeft = TourSave.tourBombs;
+      this.shufflesLeft = TourSave.tourShuffles;
+    } else {
+      // Free play: consumables come from SaveData upgrades
+      this.livesLeft = SaveData.getTier('life1') + SaveData.getTier('life2') + SaveData.getTier('life3');
+      this.bombsLeft = SaveData.getTier('bomb');
+      this.shufflesLeft = SaveData.getTier('shuffle');
+    }
+    this.shieldTurns = 0;
+  },
+
+  _showIntro(level) {
+    const overlay = document.createElement('div');
+    overlay.className = 'intro-overlay';
+    overlay.innerHTML = `<div class="intro-card">
+      <h3>${level.town}</h3>
+      <p>${level.intro}</p>
+      <button class="btn btn-primary" style="padding:10px 30px;" id="intro-dismiss">Got it!</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('intro-dismiss').addEventListener('click', () => {
+      overlay.remove();
+      TourSave.seenIntros.push(level.id);
+      TourSave.save();
+    });
   },
 
   saveRun() {
     if (!this.running) return;
-    localStorage.setItem('blocktrek_run', JSON.stringify({
+    const key = this.tourMode ? 'blocktrek_tour_run' : 'blocktrek_run';
+    localStorage.setItem(key, JSON.stringify({
       grid: Board.grid,
+      gridSize: Board.size,
       score: this.score, streak: this.streak, maxStreak: this.maxStreak,
       linesCleared: this.linesCleared, turnsPlayed: this.turnsPlayed,
       pieces: this.pieces, holdSlots: this.holdSlots,
       livesLeft: this.livesLeft, bombsLeft: this.bombsLeft,
-      shufflesLeft: this.shufflesLeft, shieldTurns: this.shieldTurns
+      shufflesLeft: this.shufflesLeft, shieldTurns: this.shieldTurns,
+      tourMode: this.tourMode,
+      tourLevelId: this.tourLevel ? this.tourLevel.id : null
     }));
   },
 
@@ -797,14 +1524,31 @@ const Game = {
     localStorage.removeItem('blocktrek_run');
   },
 
+  clearTourRunSave() {
+    localStorage.removeItem('blocktrek_tour_run');
+  },
+
   hasSavedRun() {
     return !!localStorage.getItem('blocktrek_run');
   },
 
+  hasSavedTourRun() {
+    return !!localStorage.getItem('blocktrek_tour_run');
+  },
+
   resumeRun() {
+    return this._resume('blocktrek_run');
+  },
+
+  resumeTourRun() {
+    return this._resume('blocktrek_tour_run');
+  },
+
+  _resume(key) {
     try {
-      const d = JSON.parse(localStorage.getItem('blocktrek_run'));
+      const d = JSON.parse(localStorage.getItem(key));
       if (!d) return false;
+      Board.size = d.gridSize || 10;
       Board.grid = d.grid;
       this.score = d.score; this.streak = d.streak; this.maxStreak = d.maxStreak;
       this.linesCleared = d.linesCleared; this.turnsPlayed = d.turnsPlayed;
@@ -812,11 +1556,19 @@ const Game = {
       this.livesLeft = d.livesLeft; this.bombsLeft = d.bombsLeft;
       this.shufflesLeft = d.shufflesLeft; this.shieldTurns = d.shieldTurns;
       this.bombMode = false;
+      this.cleanerMode = null;
+      this.tourMode = d.tourMode || false;
+      if (this.tourMode && d.tourLevelId !== null && d.tourLevelId !== undefined) {
+        this.tourLevel = WORLD_TOUR_BY_ID[d.tourLevelId] || WORLD_TOUR.find(l => l.id === d.tourLevelId);
+      } else {
+        this.tourLevel = null;
+      }
       this.running = true;
+      Renderer.init(Board.size);
       Renderer.renderAll();
       return true;
     } catch(e) {
-      this.clearRunSave();
+      localStorage.removeItem(key);
       return false;
     }
   },
@@ -825,6 +1577,81 @@ const Game = {
     const all = [...this.pieces.filter(p => !p.placed)];
     this.holdSlots.forEach(p => { if (p) all.push(p); });
     return all;
+  },
+
+  checkTourWin() {
+    if (!this.tourMode || !this.tourLevel) return false;
+    const level = this.tourLevel;
+    const scoreMet = level.scoreTarget <= 0 || this.score >= level.scoreTarget;
+    const linesMet = level.linesTarget <= 0 || this.linesCleared >= level.linesTarget;
+    return scoreMet && linesMet;
+  },
+
+  winTourLevel() {
+    this.running = false;
+    const key = 'blocktrek_tour_run';
+    localStorage.removeItem(key);
+
+    const level = this.tourLevel;
+
+    // Calculate stars (same formula as endRun)
+    const starScore = Math.floor(this.score / 500);
+    const starLines = Math.floor(this.linesCleared / 5);
+    const starCombo = Math.floor(this.maxStreak * 2);
+    const starSurvival = Math.floor(this.turnsPlayed / 10);
+    const totalStars = starScore + starLines + starCombo + starSurvival;
+
+    // Tour stars go to TourSave, not SaveData
+    TourSave.stars += totalStars;
+
+    // Still track global stats
+    SaveData.totalLinesCleared += this.linesCleared;
+    SaveData.save();
+
+    // Mark completed and unlock next levels
+    TourSave.complete(level.id);
+    const prevBest = TourSave.bestScores[level.id] || 0;
+    if (this.score > prevBest) TourSave.bestScores[level.id] = this.score;
+
+    if (level.next) {
+      level.next.forEach(nid => TourSave.unlock(nid));
+    }
+
+    // Handle reward
+    if (level.reward === 'bonusLife') {
+      TourSave.bonusLives++;
+    }
+    TourSave.save();
+
+    // Show level complete screen
+    Renderer.showLevelComplete({
+      town: level.town,
+      score: this.score,
+      scoreTarget: level.scoreTarget,
+      lines: this.linesCleared,
+      linesTarget: level.linesTarget,
+      starScore, starLines, starCombo, starSurvival, totalStars,
+      reward: level.reward
+    });
+  },
+
+  tickShards() {
+    let changed = false;
+    for (let r = 0; r < Board.size; r++) {
+      for (let c = 0; c < Board.size; c++) {
+        const cell = Board.grid[r][c];
+        if (cell && cell.type === 'shard') {
+          cell.turnsLeft--;
+          if (cell.turnsLeft <= 0) {
+            Board.grid[r][c] = null;
+          }
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      Renderer.renderBoard();
+    }
   },
 
   async placePiece(pieceIdx, row, col, fromHold = false) {
@@ -880,10 +1707,18 @@ const Game = {
     Renderer.renderPieces();
     Renderer.renderHUD();
 
+    // Check tour win
+    if (this.tourMode && this.checkTourWin()) {
+      this.winTourLevel();
+      return true;
+    }
+
     // Check if all tray pieces placed -> new round
     if (this.pieces.every(p => p.placed)) {
       this.turnsPlayed++;
       this.pieces = PieceFactory.generate(3);
+      // Tick shards when new pieces are dealt
+      this.tickShards();
       Renderer.renderPieces();
     }
 
@@ -899,6 +1734,10 @@ const Game = {
   async handleStuck() {
     if (this.livesLeft > 0) {
       this.livesLeft--;
+      if (this.tourMode) {
+        TourSave.tourLives = Math.max(0, TourSave.tourLives - 1);
+        TourSave.save();
+      }
       await Renderer.showRescue();
       const { rows, cols } = Board.getMostFilledRowsCols(2);
       await Renderer.animateClear(rows, cols);
@@ -921,14 +1760,56 @@ const Game = {
     let cleared = 0;
     for (let r = row - 1; r <= row + 1; r++) {
       for (let c = col - 1; c <= col + 1; c++) {
-        if (r >= 0 && r < GRID && c >= 0 && c < GRID && Board.grid[r][c]) {
+        if (r >= 0 && r < Board.size && c >= 0 && c < Board.size && Board.grid[r][c]) {
+          // Bombs clear everything EXCEPT walls (including glass and shards)
+          if (Board.grid[r][c].type === 'wall') continue;
           Board.grid[r][c] = null;
           cleared++;
         }
       }
     }
     this.bombsLeft--;
+    if (this.tourMode) {
+      TourSave.tourBombs = Math.max(0, TourSave.tourBombs - 1);
+      TourSave.save();
+    }
     this.bombMode = false;
+    Renderer.renderBoard();
+    Renderer.renderHUD();
+    Renderer.renderConsumables();
+
+    // Check if pieces can now fit
+    if (!Board.canAnyFit(this.getAllActivePieces())) {
+      await this.handleStuck();
+    }
+    this.saveRun();
+  },
+
+  async useCleaner(row, col, cleanerSize) {
+    const halfSize = Math.floor(cleanerSize / 2);
+    let changed = false;
+    for (let r = row - halfSize; r <= row + halfSize; r++) {
+      for (let c = col - halfSize; c <= col + halfSize; c++) {
+        if (r >= 0 && r < Board.size && c >= 0 && c < Board.size && Board.grid[r][c]) {
+          const cell = Board.grid[r][c];
+          if (cell.type === 'stone' || cell.type === 'ice' || cell.type === 'glass') {
+            Board.grid[r][c] = { color: cell.color, type: 'normal' };
+            changed = true;
+          } else if (cell.type === 'shard') {
+            Board.grid[r][c] = null;
+            changed = true;
+          }
+          // wall and normal are not affected
+        }
+      }
+    }
+
+    // Decrement cleaner count
+    const sizeKey = cleanerSize === 1 ? 'cleaners1x1' : cleanerSize === 2 ? 'cleaners2x2' : 'cleaners3x3';
+    TourSave[sizeKey] = Math.max(0, TourSave[sizeKey] - 1);
+    TourSave.save();
+
+    this.cleanerMode = null;
     Renderer.renderBoard();
     Renderer.renderHUD();
     Renderer.renderConsumables();
@@ -943,6 +1824,10 @@ const Game = {
   useShuffle() {
     if (this.shufflesLeft <= 0) return;
     this.shufflesLeft--;
+    if (this.tourMode) {
+      TourSave.tourShuffles = Math.max(0, TourSave.tourShuffles - 1);
+      TourSave.save();
+    }
     // Re-roll unplaced pieces only
     const newPieces = PieceFactory.generate(3);
     this.pieces.forEach((p, i) => {
@@ -1019,10 +1904,16 @@ const Game = {
 
   endRun() {
     this.running = false;
-    this.clearRunSave();
+
+    if (this.tourMode) {
+      this.clearTourRunSave();
+    } else {
+      this.clearRunSave();
+    }
+
     SaveData.totalRuns++;
     SaveData.totalLinesCleared += this.linesCleared;
-    const isNewBest = this.score > SaveData.bestScore;
+    const isNewBest = !this.tourMode && this.score > SaveData.bestScore;
     if (isNewBest) SaveData.bestScore = this.score;
 
     // Calculate stars
@@ -1032,29 +1923,52 @@ const Game = {
     const starSurvival = Math.floor(this.turnsPlayed / 10);
     const totalStars = starScore + starLines + starCombo + starSurvival;
 
-    SaveData.stars += totalStars;
-    SaveData.totalStarsEarned += totalStars;
+    if (this.tourMode) {
+      // Tour stars go to TourSave
+      TourSave.stars += totalStars;
+      TourSave.save();
+    } else {
+      // Regular stars go to SaveData
+      SaveData.stars += totalStars;
+      SaveData.totalStarsEarned += totalStars;
+    }
     SaveData.save();
 
-    Renderer.showGameOver({
-      score: this.score, lines: this.linesCleared, maxStreak: this.maxStreak,
-      turns: this.turnsPlayed, starScore, starLines, starCombo, starSurvival,
-      totalStars, isNewBest
-    });
+    if (this.tourMode) {
+      // Tour fail - full reset
+      Renderer.showTourOver({
+        score: this.score, lines: this.linesCleared, maxStreak: this.maxStreak,
+        turns: this.turnsPlayed, starScore, starLines, starCombo, starSurvival,
+        totalStars,
+        tourLevelId: this.tourLevel ? this.tourLevel.id : null,
+        levelsCompleted: TourSave.completed.length
+      });
+    } else {
+      Renderer.showGameOver({
+        score: this.score, lines: this.linesCleared, maxStreak: this.maxStreak,
+        turns: this.turnsPlayed, starScore, starLines, starCombo, starSurvival,
+        totalStars, isNewBest
+      });
+    }
   }
 };
 
 // ===== RENDERER =====
 const Renderer = {
-  boardEl: null, trayEl: null,
+  boardEl: null, trayEl: null, currentGridSize: 10,
 
-  init() {
+  init(gridSize) {
+    gridSize = gridSize || 10;
+    this.currentGridSize = gridSize;
     this.boardEl = document.getElementById('board');
     this.trayEl = document.getElementById('piece-tray');
+    // Set grid template dynamically
+    this.boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    this.boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
     // Create board cells
     this.boardEl.innerHTML = '';
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.row = r;
@@ -1070,16 +1984,37 @@ const Renderer = {
     this.renderHUD();
     this.renderHoldSlots();
     this.renderConsumables();
+    this.renderTourTargets();
   },
 
   renderBoard() {
     const cells = this.boardEl.children;
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
-        const cell = cells[r * GRID + c];
+    const gs = Board.size;
+    for (let r = 0; r < gs; r++) {
+      for (let c = 0; c < gs; c++) {
+        const cell = cells[r * gs + c];
+        if (!cell) continue;
         const val = Board.grid[r][c];
-        cell.className = 'cell' + (val ? ' filled' : '');
-        cell.style.setProperty('--piece-color', val || '');
+        // Reset classes
+        cell.className = 'cell';
+        cell.style.setProperty('--piece-color', '');
+
+        if (val) {
+          if (val.type === 'wall') {
+            cell.classList.add('cell-wall');
+          } else if (val.type === 'stone') {
+            cell.classList.add('cell-stone');
+          } else if (val.type === 'ice') {
+            cell.classList.add('cell-ice');
+          } else if (val.type === 'glass') {
+            cell.classList.add('cell-glass');
+          } else if (val.type === 'shard') {
+            cell.classList.add('cell-shard');
+          } else {
+            cell.classList.add('filled');
+            cell.style.setProperty('--piece-color', val.color || '');
+          }
+        }
       }
     }
   },
@@ -1140,19 +2075,55 @@ const Renderer = {
     document.getElementById('hud-score').textContent = Game.score.toLocaleString();
     const streakEl = document.getElementById('hud-streak');
     if (Game.streak > 0) {
-      streakEl.textContent = '🔥 x' + Game.streak;
+      streakEl.textContent = '\uD83D\uDD25 x' + Game.streak;
     } else {
       streakEl.textContent = '';
     }
     const livesEl = document.getElementById('hud-lives');
     if (Game.livesLeft > 0) {
-      livesEl.textContent = '❤️'.repeat(Game.livesLeft);
+      livesEl.textContent = '\u2764\uFE0F'.repeat(Game.livesLeft);
       livesEl.classList.remove('inactive');
-    } else if (SaveData.getTier('life1') > 0) {
-      livesEl.textContent = '🖤';
+    } else if ((!Game.tourMode && SaveData.getTier('life1') > 0) || (Game.tourMode && (TourSave.tourLives > 0 || TourSave.bonusLives > 0))) {
+      livesEl.textContent = '\uD83D\uDDA4';
       livesEl.classList.add('inactive');
     } else {
       livesEl.textContent = '';
+    }
+    this.renderTourTargets();
+  },
+
+  renderTourTargets() {
+    const container = document.getElementById('tour-targets');
+    const scoreRow = document.getElementById('tour-target-score');
+    const linesRow = document.getElementById('tour-target-lines');
+
+    if (!Game.tourMode || !Game.tourLevel) {
+      container.classList.remove('active');
+      return;
+    }
+    container.classList.add('active');
+    const level = Game.tourLevel;
+
+    if (level.scoreTarget > 0) {
+      scoreRow.style.display = '';
+      const pct = Math.min(100, (Game.score / level.scoreTarget) * 100);
+      document.getElementById('tour-score-fill').style.width = pct + '%';
+      const valEl = document.getElementById('tour-score-value');
+      valEl.textContent = `${Game.score.toLocaleString()} / ${level.scoreTarget.toLocaleString()}`;
+      valEl.className = 'tour-target-value' + (Game.score >= level.scoreTarget ? ' met' : '');
+    } else {
+      scoreRow.style.display = 'none';
+    }
+
+    if (level.linesTarget > 0) {
+      linesRow.style.display = '';
+      const pct = Math.min(100, (Game.linesCleared / level.linesTarget) * 100);
+      document.getElementById('tour-lines-fill').style.width = pct + '%';
+      const valEl = document.getElementById('tour-lines-value');
+      valEl.textContent = `${Game.linesCleared} / ${level.linesTarget}`;
+      valEl.className = 'tour-target-value' + (Game.linesCleared >= level.linesTarget ? ' met' : '');
+    } else {
+      linesRow.style.display = 'none';
     }
   },
 
@@ -1197,27 +2168,32 @@ const Renderer = {
     const container = document.getElementById('consumables');
     container.innerHTML = '';
 
-    if (SaveData.getTier('bomb') > 0) {
+    // Bomb button - show if player has bomb upgrade (free play) or tour bombs (tour mode)
+    const showBomb = Game.tourMode ? (Game.bombsLeft > 0 || TourSave.tourBombs > 0) : SaveData.getTier('bomb') > 0;
+    if (showBomb) {
       const btn = document.createElement('button');
       btn.className = 'consumable-btn' + (Game.bombMode ? ' active-mode' : '');
       btn.disabled = Game.bombsLeft <= 0;
-      btn.innerHTML = '💣';
+      btn.innerHTML = '\uD83D\uDCA3';
       const badge = document.createElement('span');
       badge.className = 'badge';
       badge.textContent = Game.bombsLeft;
       btn.appendChild(badge);
       btn.addEventListener('click', () => {
         Game.bombMode = !Game.bombMode;
+        Game.cleanerMode = null;
         Renderer.renderConsumables();
       });
       container.appendChild(btn);
     }
 
-    if (SaveData.getTier('shuffle') > 0) {
+    // Shuffle button
+    const showShuffle = Game.tourMode ? (Game.shufflesLeft > 0 || TourSave.tourShuffles > 0) : SaveData.getTier('shuffle') > 0;
+    if (showShuffle) {
       const btn = document.createElement('button');
       btn.className = 'consumable-btn';
       btn.disabled = Game.shufflesLeft <= 0;
-      btn.innerHTML = '🔀';
+      btn.innerHTML = '\uD83D\uDD00';
       const badge = document.createElement('span');
       badge.className = 'badge';
       badge.textContent = Game.shufflesLeft;
@@ -1225,22 +2201,61 @@ const Renderer = {
       btn.addEventListener('click', () => Game.useShuffle());
       container.appendChild(btn);
     }
+
+    // Block Cleaner buttons (only in tour mode)
+    if (Game.tourMode) {
+      const cleanerSizes = [
+        { size: 1, key: 'cleaners1x1', label: '1' },
+        { size: 2, key: 'cleaners2x2', label: '2' },
+        { size: 3, key: 'cleaners3x3', label: '3' },
+      ];
+      cleanerSizes.forEach(cs => {
+        const count = TourSave[cs.key];
+        if (count > 0) {
+          const btn = document.createElement('button');
+          btn.className = 'consumable-btn' + (Game.cleanerMode === cs.size ? ' active-mode-cleaner' : '');
+          btn.innerHTML = '\uD83E\uDDF9';
+          const sizeLabel = document.createElement('span');
+          sizeLabel.className = 'size-label';
+          sizeLabel.textContent = cs.label + 'x' + cs.label;
+          btn.appendChild(sizeLabel);
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = count;
+          btn.appendChild(badge);
+          btn.addEventListener('click', () => {
+            if (Game.cleanerMode === cs.size) {
+              Game.cleanerMode = null;
+            } else {
+              Game.cleanerMode = cs.size;
+              Game.bombMode = false;
+            }
+            Renderer.renderConsumables();
+          });
+          container.appendChild(btn);
+        }
+      });
+    }
   },
 
   clearGhost() {
     this.boardEl.querySelectorAll('.ghost, .invalid-ghost').forEach(c => {
       c.classList.remove('ghost', 'invalid-ghost');
-      c.style.setProperty('--piece-color', Board.grid[c.dataset.row]?.[c.dataset.col] || '');
+      const r = +c.dataset.row;
+      const col = +c.dataset.col;
+      const val = Board.grid[r]?.[col];
+      c.style.setProperty('--piece-color', val?.color || '');
     });
   },
 
   showGhost(cells, row, col, color) {
     this.clearGhost();
     const valid = Board.canPlace(cells, row, col);
+    const gs = Board.size;
     cells.forEach(([r, c]) => {
       const gr = row + r, gc = col + c;
-      if (gr >= 0 && gr < GRID && gc >= 0 && gc < GRID) {
-        const cell = this.boardEl.children[gr * GRID + gc];
+      if (gr >= 0 && gr < gs && gc >= 0 && gc < gs) {
+        const cell = this.boardEl.children[gr * gs + gc];
         if (!Board.grid[gr][gc]) {
           cell.classList.add(valid ? 'ghost' : 'invalid-ghost');
           cell.style.setProperty('--piece-color', color);
@@ -1251,9 +2266,10 @@ const Renderer = {
 
   async animateClear(rows, cols) {
     const cellEls = this.boardEl.children;
+    const gs = Board.size;
     const targets = new Set();
-    rows.forEach(r => { for (let c = 0; c < GRID; c++) targets.add(r * GRID + c); });
-    cols.forEach(c => { for (let r = 0; r < GRID; r++) targets.add(r * GRID + c); });
+    rows.forEach(r => { for (let c = 0; c < gs; c++) targets.add(r * gs + c); });
+    cols.forEach(c => { for (let r = 0; r < gs; r++) targets.add(r * gs + c); });
 
     targets.forEach(i => cellEls[i].classList.add('clearing'));
     await new Promise(r => setTimeout(r, 180));
@@ -1286,6 +2302,19 @@ const Renderer = {
   },
 
   showGameOver(data) {
+    const titleEl = document.getElementById('gameover-title');
+    const buttonsEl = document.getElementById('gameover-buttons');
+    const warningEl = document.getElementById('gameover-tour-warning');
+
+    titleEl.textContent = 'Run Over';
+    titleEl.style.color = 'var(--color-red)';
+    warningEl.style.display = 'none';
+    buttonsEl.innerHTML = `
+      <button class="btn btn-primary" onclick="App.startRun()">Play Again</button>
+      <button class="btn btn-accent" onclick="App.showScreen('shop')">Shop</button>
+      <button class="btn btn-secondary" onclick="App.showScreen('menu')">Menu</button>
+    `;
+
     document.getElementById('gameover-best').style.display = data.isNewBest ? 'block' : 'none';
     document.getElementById('gameover-stats').innerHTML = `
       <span class="label">Score</span><span class="value">${data.score.toLocaleString()}</span>
@@ -1293,19 +2322,87 @@ const Renderer = {
       <span class="label">Best Streak</span><span class="value">${data.maxStreak}</span>
       <span class="label">Turns</span><span class="value">${data.turns}</span>
     `;
+    document.getElementById('star-breakdown').className = 'star-breakdown';
     document.getElementById('star-breakdown').innerHTML = `
-      <h3>⭐ Stars Earned</h3>
+      <h3>\u2B50 Stars Earned</h3>
       <div class="star-row"><span>Score</span><span>+${data.starScore}</span></div>
       <div class="star-row"><span>Lines</span><span>+${data.starLines}</span></div>
       <div class="star-row"><span>Combo</span><span>+${data.starCombo}</span></div>
       <div class="star-row"><span>Survival</span><span>+${data.starSurvival}</span></div>
-      <div class="star-row total"><span>Total</span><span>⭐ ${data.totalStars}</span></div>
+      <div class="star-row total"><span>Total</span><span>\u2B50 ${data.totalStars}</span></div>
     `;
     App.showScreen('gameover');
   },
 
+  showTourOver(data) {
+    const titleEl = document.getElementById('gameover-title');
+    const buttonsEl = document.getElementById('gameover-buttons');
+    const warningEl = document.getElementById('gameover-tour-warning');
+
+    titleEl.textContent = 'Tour Over!';
+    titleEl.style.color = 'var(--color-red)';
+    warningEl.style.display = 'block';
+    warningEl.textContent = 'All tour progress will be reset!';
+
+    document.getElementById('gameover-best').style.display = 'none';
+    document.getElementById('gameover-stats').innerHTML = `
+      <span class="label">Score</span><span class="value">${data.score.toLocaleString()}</span>
+      <span class="label">Lines</span><span class="value">${data.lines}</span>
+      <span class="label">Best Streak</span><span class="value">${data.maxStreak}</span>
+      <span class="label">Turns</span><span class="value">${data.turns}</span>
+      <span class="label">Towns Completed</span><span class="value">${data.levelsCompleted}</span>
+    `;
+    document.getElementById('star-breakdown').className = 'star-breakdown tour-stars-border';
+    document.getElementById('star-breakdown').innerHTML = `
+      <h3 class="tour-star-heading">\uD83D\uDC8E Tour Stars Earned</h3>
+      <div class="star-row"><span>Score</span><span>+${data.starScore}</span></div>
+      <div class="star-row"><span>Lines</span><span>+${data.starLines}</span></div>
+      <div class="star-row"><span>Combo</span><span>+${data.starCombo}</span></div>
+      <div class="star-row"><span>Survival</span><span>+${data.starSurvival}</span></div>
+      <div class="star-row total tour-star-total"><span>Total</span><span>\uD83D\uDC8E ${data.totalStars}</span></div>
+    `;
+
+    buttonsEl.innerHTML = `
+      <button class="btn btn-tour" onclick="App.tourFullReset()">Start Over</button>
+      <button class="btn btn-secondary" onclick="App.showScreen('menu')">Main Menu</button>
+    `;
+
+    App.showScreen('gameover');
+  },
+
+  showLevelComplete(data) {
+    document.getElementById('lc-town').textContent = data.town;
+    let statsHTML = '';
+    if (data.scoreTarget > 0) {
+      statsHTML += `<span class="label">Score</span><span class="value">${data.score.toLocaleString()} / ${data.scoreTarget.toLocaleString()}</span>`;
+    }
+    if (data.linesTarget > 0) {
+      statsHTML += `<span class="label">Lines</span><span class="value">${data.lines} / ${data.linesTarget}</span>`;
+    }
+    document.getElementById('lc-stats').innerHTML = statsHTML;
+
+    document.getElementById('lc-star-breakdown').innerHTML = `
+      <h3 class="tour-star-heading">\uD83D\uDC8E Tour Stars Earned</h3>
+      <div class="star-row"><span>Score</span><span>+${data.starScore}</span></div>
+      <div class="star-row"><span>Lines</span><span>+${data.starLines}</span></div>
+      <div class="star-row"><span>Combo</span><span>+${data.starCombo}</span></div>
+      <div class="star-row"><span>Survival</span><span>+${data.starSurvival}</span></div>
+      <div class="star-row total tour-star-total"><span>Total</span><span>\uD83D\uDC8E ${data.totalStars}</span></div>
+    `;
+
+    const rewardEl = document.getElementById('lc-reward');
+    if (data.reward === 'bonusLife') {
+      rewardEl.style.display = '';
+      rewardEl.textContent = '\u2764\uFE0F Permanent +1 Extra Life earned!';
+    } else {
+      rewardEl.style.display = 'none';
+    }
+
+    App.showScreen('levelcomplete');
+  },
+
   renderMenu() {
-    document.getElementById('menu-stars').textContent = `⭐ ${SaveData.stars} Stars`;
+    document.getElementById('menu-stars').textContent = `\u2B50 ${SaveData.stars} Stars`;
     document.getElementById('menu-stats').textContent = `Best: ${SaveData.bestScore.toLocaleString()}  |  Runs: ${SaveData.totalRuns}  |  Lines: ${SaveData.totalLinesCleared}`;
     const continueBtn = document.getElementById('btn-continue');
     if (Game.hasSavedRun()) {
@@ -1313,10 +2410,17 @@ const Renderer = {
     } else {
       continueBtn.style.display = 'none';
     }
+    const continueTourBtn = document.getElementById('btn-continue-tour');
+    if (Game.hasSavedTourRun()) {
+      continueTourBtn.style.display = '';
+    } else {
+      continueTourBtn.style.display = 'none';
+    }
+    document.getElementById('menu-tour-progress').textContent = `Tour: ${TourSave.completed.length}/${WORLD_TOUR.length}`;
   },
 
   renderShop() {
-    document.getElementById('shop-stars').textContent = `⭐ ${SaveData.stars}`;
+    document.getElementById('shop-stars').textContent = `\u2B50 ${SaveData.stars}`;
     const grid = document.getElementById('shop-grid');
     grid.innerHTML = '';
 
@@ -1353,9 +2457,9 @@ const Renderer = {
           ${tiersHTML}${reqHTML}
         </div>
         <div class="upgrade-action">
-          ${maxed ? '<span class="owned-badge">Owned ✓</span>' :
-            locked ? '<span style="font-size:0.75rem;color:#666;">🔒 Locked</span>' :
-            `<button class="btn-buy" ${!canAfford ? 'disabled' : ''}>⭐ ${cost}</button>`
+          ${maxed ? '<span class="owned-badge">Owned \u2713</span>' :
+            locked ? '<span style="font-size:0.75rem;color:#666;">\uD83D\uDD12 Locked</span>' :
+            `<button class="btn-buy" ${!canAfford ? 'disabled' : ''}>\u2B50 ${cost}</button>`
           }
         </div>
       `;
@@ -1372,6 +2476,162 @@ const Renderer = {
 
       grid.appendChild(card);
     });
+  },
+
+  renderTourShop() {
+    document.getElementById('tourshop-stars').textContent = `\uD83D\uDC8E ${TourSave.stars}`;
+    const grid = document.getElementById('tourshop-grid');
+    grid.innerHTML = '';
+
+    TOUR_SHOP_ITEMS.forEach(item => {
+      const canAfford = TourSave.stars >= item.cost;
+      const currentCount = TourSave[item.id] || 0;
+
+      const card = document.createElement('div');
+      card.className = 'upgrade-card';
+
+      card.innerHTML = `
+        <div style="font-size:1.5rem;min-width:36px;text-align:center;">${item.icon}</div>
+        <div class="upgrade-info">
+          <div class="upgrade-name">${item.name}</div>
+          <div class="upgrade-desc">${item.desc}</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:3px;">Owned: ${currentCount}</div>
+        </div>
+        <div class="upgrade-action">
+          <button class="btn-buy-tour" ${!canAfford ? 'disabled' : ''}>\uD83D\uDC8E ${item.cost}</button>
+        </div>
+      `;
+
+      const btn = card.querySelector('.btn-buy-tour');
+      if (btn && canAfford) {
+        btn.addEventListener('click', () => {
+          TourSave.stars -= item.cost;
+          TourSave[item.id] = (TourSave[item.id] || 0) + item.qty;
+          TourSave.save();
+          this.renderTourShop();
+        });
+      }
+
+      grid.appendChild(card);
+    });
+  },
+
+  renderTourMap() {
+    document.getElementById('tour-progress').textContent = `${TourSave.completed.length}/${WORLD_TOUR.length}`;
+    document.getElementById('tour-star-count').textContent = `\uD83D\uDC8E ${TourSave.stars}`;
+
+    const mapInner = document.getElementById('tour-map-inner');
+    // Remove old towns and svg lines (keep .tour-map-bg)
+    mapInner.querySelectorAll('.tour-town').forEach(el => el.remove());
+
+    const svg = document.getElementById('tour-route-svg');
+    svg.innerHTML = '';
+
+    // Draw route lines
+    WORLD_TOUR.forEach(level => {
+      if (!level.next) return;
+      level.next.forEach(nextId => {
+        const nextLevel = WORLD_TOUR_BY_ID[nextId];
+        if (!nextLevel) return;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', level.pos[0] + '%');
+        line.setAttribute('y1', level.pos[1] + '%');
+        line.setAttribute('x2', nextLevel.pos[0] + '%');
+        line.setAttribute('y2', nextLevel.pos[1] + '%');
+        let cls = 'tour-route-line';
+        if (TourSave.isCompleted(level.id) && TourSave.isCompleted(nextId)) {
+          cls += ' completed';
+        } else if (TourSave.isUnlocked(level.id) || TourSave.isUnlocked(nextId)) {
+          cls += ' unlocked';
+        }
+        line.setAttribute('class', cls);
+        svg.appendChild(line);
+      });
+    });
+
+    // Draw town dots
+    WORLD_TOUR.forEach(level => {
+      const dot = document.createElement('div');
+      dot.className = 'tour-town';
+      dot.style.left = level.pos[0] + '%';
+      dot.style.top = level.pos[1] + '%';
+
+      if (TourSave.isCompleted(level.id)) {
+        dot.classList.add('tour-town-completed');
+      } else if (TourSave.isUnlocked(level.id)) {
+        dot.classList.add('tour-town-available');
+      } else {
+        dot.classList.add('tour-town-locked');
+      }
+
+      const label = document.createElement('div');
+      label.className = 'tour-town-label';
+      label.textContent = level.town;
+      dot.appendChild(label);
+
+      dot.addEventListener('click', () => {
+        if (!dot.classList.contains('tour-town-locked')) {
+          this.showTourDetail(level);
+        }
+      });
+
+      mapInner.appendChild(dot);
+    });
+  },
+
+  showTourDetail(level) {
+    const detail = document.getElementById('tour-detail');
+    const card = document.getElementById('tour-detail-card');
+
+    let conditionsHTML = '';
+    if (level.scoreTarget > 0) {
+      conditionsHTML += `<div class="tour-detail-row"><span class="label">Score Target</span><span class="value">${level.scoreTarget.toLocaleString()}</span></div>`;
+    }
+    if (level.linesTarget > 0) {
+      conditionsHTML += `<div class="tour-detail-row"><span class="label">Lines Target</span><span class="value">${level.linesTarget}</span></div>`;
+    }
+    conditionsHTML += `<div class="tour-detail-row"><span class="label">Grid Size</span><span class="value">${level.grid}x${level.grid}</span></div>`;
+
+    const completed = TourSave.isCompleted(level.id);
+    const bestScore = TourSave.bestScores[level.id];
+    let bestHTML = '';
+    if (bestScore) {
+      bestHTML = `<div class="tour-detail-best">Best: ${bestScore.toLocaleString()}</div>`;
+    }
+
+    let statusHTML = '';
+    if (completed) {
+      statusHTML = `<span style="color:var(--color-green);font-weight:700;">Completed \u2713</span>`;
+    }
+
+    let buttonsHTML = '';
+    if (TourSave.isUnlocked(level.id)) {
+      const btnLabel = completed ? 'Play Again' : 'Play';
+      buttonsHTML = `
+        <button class="btn btn-tour" onclick="App.startTourLevel(${level.id})" style="padding:10px 30px;">${btnLabel}</button>
+        <button class="btn btn-secondary" onclick="Renderer.closeTourDetail()" style="padding:10px 20px;">Close</button>
+      `;
+    } else {
+      buttonsHTML = `
+        <div style="color:var(--tour-star);font-size:0.85rem;">\uD83D\uDC8E Unlock cost: ${level.unlock} tour stars</div>
+        <button class="btn btn-secondary" onclick="Renderer.closeTourDetail()" style="padding:10px 20px;">Close</button>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="tour-detail-town">${level.town}</div>
+      <div class="tour-detail-desc">${level.desc}</div>
+      ${statusHTML}
+      <div class="tour-detail-info">${conditionsHTML}</div>
+      ${bestHTML}
+      <div class="tour-detail-buttons">${buttonsHTML}</div>
+    `;
+
+    detail.classList.add('active');
+  },
+
+  closeTourDetail() {
+    document.getElementById('tour-detail').classList.remove('active');
   }
 };
 
@@ -1386,14 +2646,13 @@ const DragController = {
   offsetX: 0, offsetY: 0,
 
   // Convert screen position (top-left of float) to grid row/col
-  // Accounts for board padding (3px) and cell gap (2px)
   screenToGrid(screenX, screenY) {
     const boardRect = Renderer.boardEl.getBoundingClientRect();
     const padding = 3;
     const gap = 2;
-    // stride = distance from one cell's left edge to the next cell's left edge
+    const gs = Board.size;
     const innerWidth = boardRect.width - 2 * padding;
-    const cellW = (innerWidth - (GRID - 1) * gap) / GRID;
+    const cellW = (innerWidth - (gs - 1) * gap) / gs;
     const stride = cellW + gap;
     const gridCol = Math.round((screenX - boardRect.left - padding) / stride);
     const gridRow = Math.round((screenY - boardRect.top - padding) / stride);
@@ -1413,13 +2672,17 @@ const DragController = {
     holdContainer.addEventListener('mousedown', e => this.onHoldStart(e));
     holdContainer.addEventListener('touchstart', e => this.onHoldStart(e), { passive: false });
 
-    // Board events (for bomb mode)
+    // Board events (for bomb mode and cleaner mode)
     board.addEventListener('click', async e => {
+      const cell = e.target.closest('.cell');
+      if (!cell) return;
+      const row = +cell.dataset.row;
+      const col = +cell.dataset.col;
+
       if (Game.bombMode && Game.bombsLeft > 0) {
-        const cell = e.target.closest('.cell');
-        if (cell) {
-          await Game.useBomb(+cell.dataset.row, +cell.dataset.col);
-        }
+        await Game.useBomb(row, col);
+      } else if (Game.cleanerMode !== null) {
+        await Game.useCleaner(row, col, Game.cleanerMode);
       }
     });
 
@@ -1430,7 +2693,6 @@ const DragController = {
   },
 
   onHoldStart(e) {
-    // Only start drag from occupied hold slots
     const slot = e.target.closest('.hold-slot');
     if (!slot || !slot.classList.contains('occupied')) return;
 
@@ -1446,7 +2708,7 @@ const DragController = {
     this.dragPiece = piece;
     this.dragPieceIdx = idx;
     this.dragFromHold = true;
-    this.dragging = false; // Wait for movement threshold
+    this.dragging = false;
     this._pendingHoldDrag = true;
   },
 
@@ -1492,16 +2754,15 @@ const DragController = {
     if (!this.dragging) return;
     e.preventDefault();
 
-    // Position float with offset above finger
     const yOff = e.touches ? -60 : -30;
     this.floatEl.style.left = (touch.clientX - this.offsetX) + 'px';
     this.floatEl.style.top = (touch.clientY - this.offsetY + yOff) + 'px';
 
-    // Ghost preview — map float top-left to grid cell
     const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
+    const gs = Board.size;
 
     Renderer.clearGhost();
-    if (gridRow >= -2 && gridRow < GRID + 2 && gridCol >= -2 && gridCol < GRID + 2) {
+    if (gridRow >= -2 && gridRow < gs + 2 && gridCol >= -2 && gridCol < gs + 2) {
       Renderer.showGhost(this.dragPiece.cells, gridRow, gridCol, this.dragPiece.color);
     }
   },
@@ -1515,7 +2776,6 @@ const DragController = {
     const wasTap = elapsed < 300 && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold;
 
     if (this._pendingHoldDrag && !this.dragging) {
-      // Tap on hold slot — retrieve
       if (wasTap) Game.retrieveHold(this.dragPieceIdx);
       this._pendingHoldDrag = false;
       return;
@@ -1523,7 +2783,6 @@ const DragController = {
 
     if (this._pendingTrayDrag && !this.dragging) {
       if (wasTap) {
-        // Tap on tray piece: rotate if unlocked, or hold
         if (SaveData.hasUpgrade('rotation')) {
           Game.rotatePiece(this.dragPieceIdx);
         } else if (Game.holdSlots.length > 0) {
@@ -1540,7 +2799,6 @@ const DragController = {
       return;
     }
 
-    // Try to place
     const yOff = e.changedTouches ? -60 : -30;
     const { gridRow, gridCol } = this.screenToGrid(touch.clientX - this.offsetX, touch.clientY - this.offsetY + yOff);
 
@@ -1549,7 +2807,6 @@ const DragController = {
 
     await Game.placePiece(this.dragPieceIdx, gridRow, gridCol, this.dragFromHold);
 
-    // Unmark dragging
     if (!this.dragFromHold) {
       const container = document.querySelector(`.piece-container[data-piece-idx="${this.dragPieceIdx}"]`);
       if (container) container.classList.remove('dragging');
@@ -1563,11 +2820,11 @@ const DragController = {
   createFloat(x, y) {
     const piece = this.dragPiece;
     const bounds = PieceFactory.getBounds(piece.cells);
-    // Match the board's actual cell size so float aligns with ghost
     const boardRect = Renderer.boardEl.getBoundingClientRect();
     const padding = 3;
     const gap = 2;
-    const cellSize = (boardRect.width - 2 * padding - (GRID - 1) * gap) / GRID;
+    const gs = Board.size;
+    const cellSize = (boardRect.width - 2 * padding - (gs - 1) * gap) / gs;
     const stride = cellSize + gap;
 
     const container = document.createElement('div');
@@ -1589,8 +2846,6 @@ const DragController = {
     }
     container.appendChild(grid);
 
-    // Offset from cursor to the piece's top-left corner
-    // Use stride (cell + gap) so the float's grid lines up with the board's grid
     this.offsetX = (bounds.cols * stride - gap) / 2;
     this.offsetY = (bounds.rows * stride - gap) / 2;
 
@@ -1606,21 +2861,12 @@ const DragController = {
   }
 };
 
-// ===== LONG PRESS FOR HOLD (when rotation is unlocked, tap = rotate, long press = hold) =====
-// This is handled in DragController.onEnd: tap = rotate, drag = place
-// For hold: double-tap when rotation is unlocked
-// Actually let's simplify: when rotation IS unlocked, first tap rotates.
-// To hold, the user taps the "hold" area / or we add a hold button approach.
-// Better: if rotation unlocked, single tap = rotate. Swipe up on piece = hold.
-// For simplicity: tap = rotate if rotation unlocked, otherwise tap = hold.
-// When both are unlocked: tap = rotate. User retrieves from hold by tapping hold slot.
-// To PUT into hold when rotation is unlocked: we add small hold buttons under each piece.
-
 // ===== APP =====
 const App = {
   init() {
     SaveData.load();
-    Renderer.init();
+    TourSave.load();
+    Renderer.init(10);
     DragController.init();
     this.showScreen('menu');
   },
@@ -1630,6 +2876,10 @@ const App = {
     document.getElementById(`screen-${name}`).classList.add('active');
     if (name === 'menu') Renderer.renderMenu();
     if (name === 'shop') Renderer.renderShop();
+    if (name === 'tourshop') Renderer.renderTourShop();
+    if (name === 'tour') Renderer.renderTourMap();
+    // Close tour detail if leaving tour screen
+    if (name !== 'tour') Renderer.closeTourDetail();
   },
 
   startRun() {
@@ -1640,6 +2890,35 @@ const App = {
   continueRun() {
     this.showScreen('game');
     Game.resumeRun();
+  },
+
+  continueTourRun() {
+    this.showScreen('game');
+    Game.resumeTourRun();
+  },
+
+  startTourLevel(id) {
+    Renderer.closeTourDetail();
+    this.showScreen('game');
+    Game.startTourLevel(id);
+  },
+
+  retryTourLevel(id) {
+    this.showScreen('game');
+    Game.startTourLevel(id);
+  },
+
+  tourFullReset() {
+    TourSave.fullReset();
+    this.showScreen('tour');
+  },
+
+  pauseToMenu() {
+    if (Game.tourMode) {
+      App.showScreen('tour');
+    } else {
+      App.showScreen('menu');
+    }
   }
 };
 
