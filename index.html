@@ -619,7 +619,6 @@ const SHAPES = [
 ];
 
 const UPGRADES = [
-  { id: 'ghostPreview', name: 'Ghost Preview', desc: 'Shows a translucent preview where pieces will land while dragging.', maxTier: 1, costs: [50], icon: '👻', req: null },
   { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it (small/medium only). Tap held piece to retrieve.', maxTier: 1, costs: [100], icon: '📦', req: null },
   { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90° clockwise before placing.', maxTier: 1, costs: [150], icon: '🔄', req: null },
   { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [100, 225, 400], icon: '🍀', req: null },
@@ -1236,7 +1235,6 @@ const Renderer = {
   },
 
   showGhost(cells, row, col, color) {
-    if (!SaveData.hasUpgrade('ghostPreview')) return;
     this.clearGhost();
     const valid = Board.canPlace(cells, row, col);
     cells.forEach(([r, c]) => {
