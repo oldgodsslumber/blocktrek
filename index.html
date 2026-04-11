@@ -662,24 +662,25 @@ body {
   flex: 1;
   position: relative;
   background: #0d1b2a;
-  overflow-x: auto;
-  overflow-y: hidden;
-  touch-action: pan-x;
+  overflow: auto;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #2a4a6a #0d1b2a;
 }
-.tour-map-container::-webkit-scrollbar { height: 10px; }
+.tour-map-container::-webkit-scrollbar { width: 8px; height: 10px; }
 .tour-map-container::-webkit-scrollbar-track { background: #0d1b2a; }
 .tour-map-container::-webkit-scrollbar-thumb { background: #2a4a6a; border-radius: 5px; }
 .tour-map-container::-webkit-scrollbar-thumb:hover { background: #3a6a9a; }
 .tour-map-inner {
-  /* Height fills container, width derived from the 1000:556 SVG aspect ratio */
-  height: 100%;
-  aspect-ratio: 1000 / 556;
-  min-height: 400px;
+  /* Big enough to spread towns apart — scrollable in both directions */
+  width: 1800px;
+  height: 1000px;
   position: relative;
   background: #0d1b2a;
+}
+@media (min-width: 601px) {
+  .tour-map-inner { width: 2400px; height: 1333px; }
 }
 .ma-outline {
   position: absolute;
@@ -2588,11 +2589,13 @@ const Renderer = {
       mapInner.appendChild(dot);
     });
 
-    // Scroll to center on Newburyport area (right side of map)
+    // Scroll to center on Newburyport area
     const container = document.querySelector('.tour-map-container');
     const newburyport = WORLD_TOUR[0];
-    const scrollTarget = (newburyport.pos[0] / 100) * mapInner.offsetWidth - container.offsetWidth / 2;
-    container.scrollLeft = Math.max(0, scrollTarget);
+    const targetX = (newburyport.pos[0] / 100) * mapInner.offsetWidth - container.offsetWidth / 2;
+    const targetY = (newburyport.pos[1] / 100) * mapInner.offsetHeight - container.offsetHeight / 2;
+    container.scrollLeft = Math.max(0, targetX);
+    container.scrollTop = Math.max(0, targetY);
   },
 
   showTourDetail(level) {
