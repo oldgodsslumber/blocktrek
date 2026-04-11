@@ -618,20 +618,21 @@ body {
 
 /* ===== TOUR MAP SCREEN ===== */
 #screen-tour {
-  gap: 12px;
-  padding-bottom: 40px;
-  overflow-y: auto;
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
 }
 .tour-header {
   width: 100%;
-  max-width: 500px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 10px 12px;
+  flex-shrink: 0;
+  z-index: 5;
+  background: var(--bg-dark);
 }
 .tour-header-left {
   display: flex;
@@ -658,25 +659,35 @@ body {
 .tour-star-count { color: var(--tour-star); font-weight: 700; }
 .tour-map-container {
   width: 100%;
-  max-width: 800px;
+  flex: 1;
   position: relative;
-  aspect-ratio: 1.8;
   background: #0d1b2a;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid #1a2a3e;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #2a4a6a #0d1b2a;
 }
+.tour-map-container::-webkit-scrollbar { height: 10px; }
+.tour-map-container::-webkit-scrollbar-track { background: #0d1b2a; }
+.tour-map-container::-webkit-scrollbar-thumb { background: #2a4a6a; border-radius: 5px; }
+.tour-map-container::-webkit-scrollbar-thumb:hover { background: #3a6a9a; }
 .tour-map-inner {
-  width: 100%;
+  /* Map is 2.5x viewport width so you scroll to explore, min 900px tall-ish */
+  width: 250vw;
+  min-width: 1200px;
   height: 100%;
+  min-height: 400px;
   position: relative;
   background: #0d1b2a;
 }
 .ma-outline {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 3%;
+  left: 2%;
+  width: 96%;
+  height: 94%;
 }
 .ma-outline .ma-fill {
   fill: #132238;
@@ -712,8 +723,8 @@ body {
 }
 .tour-town {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
@@ -723,8 +734,8 @@ body {
 .tour-town:hover { transform: translate(-50%, -50%) scale(1.3); }
 .tour-town-locked {
   background: #333;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   cursor: default;
   opacity: 0.5;
 }
@@ -748,11 +759,12 @@ body {
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 0.5rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
-  margin-top: 3px;
+  margin-top: 4px;
   pointer-events: none;
   text-align: center;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 .tour-town-completed .tour-town-label { color: var(--color-green); }
 .tour-town-available .tour-town-label { color: #fff; }
@@ -2577,6 +2589,12 @@ const Renderer = {
 
       mapInner.appendChild(dot);
     });
+
+    // Scroll to center on Newburyport area (right side of map)
+    const container = document.querySelector('.tour-map-container');
+    const newburyport = WORLD_TOUR[0];
+    const scrollTarget = (newburyport.pos[0] / 100) * mapInner.offsetWidth - container.offsetWidth / 2;
+    container.scrollLeft = Math.max(0, scrollTarget);
   },
 
   showTourDetail(level) {
