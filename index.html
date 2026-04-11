@@ -619,18 +619,18 @@ const SHAPES = [
 ];
 
 const UPGRADES = [
-  { id: 'ghostPreview', name: 'Ghost Preview', desc: 'Shows a translucent preview where pieces will land while dragging.', maxTier: 1, costs: [15], icon: '👻', req: null },
-  { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it. Tap held piece to retrieve.', maxTier: 1, costs: [30], icon: '📦', req: null },
-  { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90° clockwise before placing.', maxTier: 1, costs: [50], icon: '🔄', req: null },
-  { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [35, 75, 140], icon: '🍀', req: null },
-  { id: 'shuffle', name: 'Shuffle', desc: 'Re-roll all current tray pieces. Limited uses per run.', maxTier: 3, costs: [40, 70, 120], icon: '🔀', req: null },
-  { id: 'scoreMult', name: 'Score Multiplier', desc: 'Permanent bonus to all score earned (+10% per tier).', maxTier: 4, costs: [45, 90, 160, 280], icon: '✖️', req: null },
-  { id: 'streakShield', name: 'Streak Shield', desc: 'Your combo streak doesn\'t reset for missed turns.', maxTier: 2, costs: [60, 130], icon: '🛡️', req: null },
-  { id: 'bomb', name: 'Bomb', desc: 'Clears a 3×3 area. Tap the board to detonate. Limited per run.', maxTier: 3, costs: [55, 100, 180], icon: '💣', req: null },
-  { id: 'life1', name: 'Extra Life', desc: 'When stuck, rescue clears the most-filled rows & columns.', maxTier: 1, costs: [80], icon: '❤️', req: null },
-  { id: 'hold2', name: 'Hold Slot 2', desc: 'A second hold slot for even more flexibility.', maxTier: 1, costs: [100], icon: '📦', req: 'hold1' },
-  { id: 'life2', name: 'Extra Life 2', desc: 'A second rescue charge per run.', maxTier: 1, costs: [200], icon: '❤️', req: 'life1' },
-  { id: 'life3', name: 'Extra Life 3', desc: 'A third rescue charge per run.', maxTier: 1, costs: [400], icon: '❤️', req: 'life2' },
+  { id: 'ghostPreview', name: 'Ghost Preview', desc: 'Shows a translucent preview where pieces will land while dragging.', maxTier: 1, costs: [50], icon: '👻', req: null },
+  { id: 'hold1', name: 'Hold Slot', desc: 'Tap a tray piece to stash it (small/medium only). Tap held piece to retrieve.', maxTier: 1, costs: [100], icon: '📦', req: null },
+  { id: 'rotation', name: 'Rotation', desc: 'Tap a piece to rotate it 90° clockwise before placing.', maxTier: 1, costs: [150], icon: '🔄', req: null },
+  { id: 'smallLuck', name: 'Small Piece Luck', desc: 'Increases chance of getting smaller, easier pieces.', maxTier: 3, costs: [100, 225, 400], icon: '🍀', req: null },
+  { id: 'shuffle', name: 'Shuffle', desc: 'Re-roll all current tray pieces. Limited uses per run.', maxTier: 3, costs: [120, 200, 350], icon: '🔀', req: null },
+  { id: 'scoreMult', name: 'Score Multiplier', desc: 'Permanent bonus to all score earned (+10% per tier).', maxTier: 4, costs: [130, 275, 475, 800], icon: '✖️', req: null },
+  { id: 'streakShield', name: 'Streak Shield', desc: 'Your combo streak doesn\'t reset for missed turns.', maxTier: 2, costs: [175, 375], icon: '🛡️', req: null },
+  { id: 'bomb', name: 'Bomb', desc: 'Clears a 3×3 area. Tap the board to detonate. Limited per run.', maxTier: 3, costs: [160, 300, 525], icon: '💣', req: null },
+  { id: 'life1', name: 'Extra Life', desc: 'When stuck, rescue clears the most-filled rows & columns.', maxTier: 1, costs: [250], icon: '❤️', req: null },
+  { id: 'hold2', name: 'Hold Slot 2', desc: 'A second hold slot for even more flexibility.', maxTier: 1, costs: [300], icon: '📦', req: 'hold1' },
+  { id: 'life2', name: 'Extra Life 2', desc: 'A second rescue charge per run.', maxTier: 1, costs: [600], icon: '❤️', req: 'life1' },
+  { id: 'life3', name: 'Extra Life 3', desc: 'A third rescue charge per run.', maxTier: 1, costs: [1200], icon: '❤️', req: 'life2' },
 ];
 
 // ===== SAVE DATA =====
@@ -957,10 +957,17 @@ const Game = {
     this.saveRun();
   },
 
+  clonePiece(piece) {
+    return { id: piece.id, name: piece.name, cells: piece.cells.map(c => [...c]), color: piece.color, placed: piece.placed, rotation: piece.rotation };
+  },
+
   holdPiece(pieceIdx) {
     if (this.holdSlots.length === 0) return;
     const piece = this.pieces[pieceIdx];
     if (!piece || piece.placed) return;
+
+    // Only small and medium pieces can be held (large = 5+ cells)
+    if (piece.cells.length >= 5) return;
 
     // Find empty hold slot
     let slotIdx = this.holdSlots.findIndex(s => s === null);
@@ -968,12 +975,12 @@ const Game = {
       // Swap with first hold slot
       slotIdx = 0;
       const held = this.holdSlots[slotIdx];
-      this.holdSlots[slotIdx] = { ...piece };
+      this.holdSlots[slotIdx] = this.clonePiece(piece);
       this.pieces[pieceIdx] = held;
       held.id = pieceIdx;
       held.placed = false;
     } else {
-      this.holdSlots[slotIdx] = { ...piece };
+      this.holdSlots[slotIdx] = this.clonePiece(piece);
       // Mark tray slot as empty placeholder
       this.pieces[pieceIdx] = { id: pieceIdx, name: '', cells: [[0,0]], color: '', placed: true, rotation: 0 };
     }
@@ -1162,7 +1169,8 @@ const Renderer = {
         const bounds = PieceFactory.getBounds(piece.cells);
         const grid = document.createElement('div');
         grid.className = 'piece-grid';
-        const cellSize = 9;
+        const maxDim = Math.max(bounds.rows, bounds.cols);
+        const cellSize = Math.floor((40 - (maxDim - 1) * 2) / maxDim);
         grid.style.gridTemplateColumns = `repeat(${bounds.cols}, ${cellSize}px)`;
         grid.style.gridTemplateRows = `repeat(${bounds.rows}, ${cellSize}px)`;
         grid.style.setProperty('--piece-color', piece.color);
