@@ -621,6 +621,7 @@ body {
   gap: 0;
   padding: 0;
   overflow: hidden;
+  touch-action: auto;
 }
 .tour-header {
   width: 100%;
@@ -663,10 +664,11 @@ body {
   position: relative;
   background: #0d1b2a;
   overflow: auto;
-  touch-action: pan-x pan-y;
+  touch-action: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #2a4a6a #0d1b2a;
+  cursor: grab;
 }
 .tour-map-container::-webkit-scrollbar { width: 8px; height: 10px; }
 .tour-map-container::-webkit-scrollbar-track { background: #0d1b2a; }
@@ -678,6 +680,7 @@ body {
   height: 1000px;
   position: relative;
   background: #0d1b2a;
+  touch-action: auto;
 }
 @media (min-width: 601px) {
   .tour-map-inner { width: 2400px; height: 1333px; }
@@ -2887,7 +2890,29 @@ const App = {
     TourSave.load();
     Renderer.init(10);
     DragController.init();
+    this.initMapDragScroll();
     this.showScreen('menu');
+  },
+
+  initMapDragScroll() {
+    const container = document.querySelector('.tour-map-container');
+    let isDragging = false, startX, startY, scrollL, scrollT;
+    container.addEventListener('mousedown', e => {
+      if (e.target.closest('.tour-town')) return; // don't hijack town clicks
+      isDragging = true;
+      startX = e.clientX; startY = e.clientY;
+      scrollL = container.scrollLeft; scrollT = container.scrollTop;
+      container.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      container.scrollLeft = scrollL - (e.clientX - startX);
+      container.scrollTop = scrollT - (e.clientY - startY);
+    });
+    document.addEventListener('mouseup', () => {
+      if (isDragging) { isDragging = false; container.style.cursor = ''; }
+    });
   },
 
   showScreen(name) {
