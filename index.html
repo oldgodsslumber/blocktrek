@@ -2119,14 +2119,8 @@ const Game = {
       TourSave.tourShuffles = Math.max(0, TourSave.tourShuffles - 1);
       TourSave.save();
     }
-    // Re-roll unplaced pieces only
-    const newPieces = PieceFactory.generate(3);
-    this.pieces.forEach((p, i) => {
-      if (!p.placed) {
-        this.pieces[i] = newPieces[i];
-        this.pieces[i].id = i;
-      }
-    });
+    // Replace ALL pieces with a fresh set of 3
+    this.pieces = PieceFactory.generate(3);
     Renderer.renderPieces();
     Renderer.renderConsumables();
     this.checkDanger();
