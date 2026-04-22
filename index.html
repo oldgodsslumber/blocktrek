@@ -1654,7 +1654,7 @@ const Board = {
 const Game = {
   score: 0, streak: 0, maxStreak: 0, linesCleared: 0, turnsPlayed: 0,
   pieces: [], holdSlots: [], livesLeft: 0, bombsLeft: 0, shufflesLeft: 0,
-  shieldTurns: 0, bombMode: false, cleanerMode: null, running: false,
+  shieldTurns: 0, bombMode: false, cleanerMode: null, running: false, _placing: false,
   tourMode: false, tourLevel: null, fallingMode: false,
 
   start(gridSize, fallingMode) {
@@ -1895,10 +1895,14 @@ const Game = {
   },
 
   async placePiece(pieceIdx, row, col, fromHold = false) {
+    // Mutex: reject concurrent placements while a previous one's animation is running
+    if (this._placing) return false;
     const piece = fromHold ? this.holdSlots[pieceIdx] : this.pieces[pieceIdx];
     if (!piece || piece.placed) return false;
     if (!Board.canPlace(piece.cells, row, col)) return false;
 
+    this._placing = true;
+    try {
     Board.place(piece.cells, row, col, piece.color);
     const cellCount = piece.cells.length;
 
@@ -1986,6 +1990,9 @@ const Game = {
 
     this.saveRun();
     return true;
+    } finally {
+      this._placing = false;
+    }
   },
 
   async handleStuck() {
@@ -2041,6 +2048,9 @@ const Game = {
   },
 
   async useBomb(row, col) {
+    if (this._placing) return;
+    this._placing = true;
+    try {
     let cleared = 0;
     for (let r = row - 1; r <= row + 1; r++) {
       for (let c = col - 1; c <= col + 1; c++) {
@@ -2073,9 +2083,15 @@ const Game = {
       await this.handleStuck();
     }
     this.saveRun();
+    } finally {
+      this._placing = false;
+    }
   },
 
   async useCleaner(row, col, cleanerSize) {
+    if (this._placing) return;
+    this._placing = true;
+    try {
     const halfSize = Math.floor(cleanerSize / 2);
     let changed = false;
     for (let r = row - halfSize; r <= row + halfSize; r++) {
@@ -2110,6 +2126,9 @@ const Game = {
       await this.handleStuck();
     }
     this.saveRun();
+    } finally {
+      this._placing = false;
+    }
   },
 
   useShuffle() {
@@ -3082,12 +3101,20 @@ const DragController = {
   },
 
   onHoldStart(e) {
+    // Refuse new drags while a placement is being processed
+    if (Game._placing) return;
     const slot = e.target.closest('.hold-slot');
     if (!slot || !slot.classList.contains('occupied')) return;
 
     const idx = +slot.dataset.holdIdx;
     const piece = Game.holdSlots[idx];
     if (!piece) return;
+
+    // Clean up any stale drag state from a previous aborted drag
+    this.removeFloat();
+    this.dragging = false;
+    this._pendingTrayDrag = false;
+    this._pendingHoldDrag = false;
 
     e.preventDefault();
     const touch = e.touches ? e.touches[0] : e;
@@ -3097,11 +3124,12 @@ const DragController = {
     this.dragPiece = piece;
     this.dragPieceIdx = idx;
     this.dragFromHold = true;
-    this.dragging = false;
     this._pendingHoldDrag = true;
   },
 
   onStart(e, fromHold) {
+    // Refuse new drags while a placement is being processed
+    if (Game._placing) return;
     const container = e.target.closest('.piece-container');
     if (!container || container.classList.contains('placed')) return;
 
@@ -3110,6 +3138,12 @@ const DragController = {
     const piece = Game.pieces[idx];
     if (!piece || piece.placed) return;
 
+    // Clean up any stale drag state from a previous aborted drag
+    this.removeFloat();
+    this.dragging = false;
+    this._pendingTrayDrag = false;
+    this._pendingHoldDrag = false;
+
     const touch = e.touches ? e.touches[0] : e;
     this.startX = touch.clientX;
     this.startY = touch.clientY;
@@ -3117,7 +3151,6 @@ const DragController = {
     this.dragPiece = piece;
     this.dragPieceIdx = idx;
     this.dragFromHold = false;
-    this.dragging = false;
     this._pendingTrayDrag = true;
   },
 
@@ -3271,7 +3304,30 @@ const App = {
     Renderer.init(10);
     DragController.init();
     this.initMapDragScroll();
+    this.installSafetySaves();
     this.showScreen('menu');
+  },
+
+  installSafetySaves() {
+    // Save run state whenever the tab is about to be closed, hidden, or reloaded.
+    // Prevents losing progress if the browser backgrounds the page or crashes.
+    const safeSave = () => {
+      try {
+        if (Game && Game.running) Game.saveRun();
+        InfiniteSave.save();
+        TourSave.save();
+      } catch(e) {}
+    };
+    // pagehide is the most reliable signal on mobile Safari / iOS
+    window.addEventListener('pagehide', safeSave);
+    // beforeunload covers desktop browser close / refresh
+    window.addEventListener('beforeunload', safeSave);
+    // visibilitychange catches tab switches and backgrounding
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') safeSave();
+    });
+    // Also save every 10 seconds during active play as a belt-and-suspenders
+    setInterval(() => { if (Game.running) Game.saveRun(); }, 10000);
   },
 
   initMapDragScroll() {
